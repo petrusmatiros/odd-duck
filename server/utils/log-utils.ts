@@ -1,5 +1,4 @@
-import { info } from "node:console";
-
+import colors from "yoctocolors";
 export class Logger {
 	private prefix: string;
 	constructor(prefix: string) {
@@ -17,13 +16,13 @@ export class Logger {
 		console.log(this.formatMessage(message, ...args));
 	}
 	error(message: string, ...args: unknown[]) {
-		console.error(this.formatMessage(message, ...args));
+		console.error(colors.red(this.formatMessage(message, ...args)));
 	}
 	warn(message: string, ...args: unknown[]) {
-		console.warn(this.formatMessage(message, ...args));
+		console.warn(colors.yellow(this.formatMessage(message, ...args)));
 	}
 	info(message: string, ...args: unknown[]) {
-		console.info(this.formatMessage(message, ...args));
+		console.info(colors.cyan(this.formatMessage(message, ...args)));
 	}
 	debug(message: string, ...args: unknown[]) {
 		console.debug(this.formatMessage(message, ...args));

@@ -40,16 +40,20 @@ io.engine.use(helmet());
 
 // Middleware to parse JSON requests
 app.use(express.json());
-app.use(cors());
-// Middleware to serve static files
-app.use(express.static("public"));
 
+// Middleware to parse URL-encoded requests
+app.use(cors());
+
+// Middleware to serve static files
 const staticFileDirectoryPath = "../../client/out";
+const pathToStaticFiles = path.join(__dirname, staticFileDirectoryPath);
+
+app.use(express.static(pathToStaticFiles));
+
 const indexFileName = "index.html";
 
 app.get("/", (req, res) => {
-  logger.log(`Serving ${indexFileName}`);
-	const pathToStaticFiles = path.join(__dirname, staticFileDirectoryPath);
+	logger.log(`Serving ${indexFileName}`);
 
 	logger.log(path.join(pathToStaticFiles, indexFileName));
 	res.sendFile(path.join(pathToStaticFiles, indexFileName), (err) => {
@@ -57,10 +61,9 @@ app.get("/", (req, res) => {
 			logger.error(`Error sending ${indexFileName}:`, err);
 			res.status(err.status).end();
 		} else {
-			logger.error(`${indexFileName} sent successfully`);
+			logger.log(`${indexFileName} sent successfully`);
 		}
-	}
-	);
+	});
 });
 
 server.listen(PORT, () => {
@@ -73,16 +76,15 @@ io.use((socket, next) => {
 	const id = socket.id;
 
 	if (!token) {
-		logger.log('No token provided');
+		logger.log("No token provided");
 		return next(new Error("Authentication error"));
 	}
-	
+
 	// Verify the token here (e.g., using JWT)
 	// If valid, call next()
 	// If invalid, call next(new Error("Authentication error"))
 	logger.log(`Token: ${token}`);
 	next();
-
 });
 
 io.on("connection", (socket) => {
@@ -92,13 +94,13 @@ io.on("connection", (socket) => {
 
 		// // join the room named 'some room'
 		// socket.join('some room');
-  
+
 		// // broadcast to all connected clients in the room
 		// io.to('some room').emit('hello', 'world');
-	
+
 		// // broadcast to all connected clients except those in the room
 		// io.except('some room').emit('hello', 'world');
-	
+
 		// // leave the room
 		// socket.leave('some room');
 	});
