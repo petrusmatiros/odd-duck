@@ -4,16 +4,17 @@ import type { TimerInstance } from "../TimerInstance/TimerInstance";
 
 export class RoomInstance {
 		id: string;
-    host: PlayerInstance;
-		players: PlayerInstance[];
-    spies: PlayerInstance[];
-    civilians: PlayerInstance[];
+    host: string;
+		players: string[];
+    spies: string[];
+    civilians: string[];
 		gamePackId: string;
 		timer: TimerInstance;
 		gameState: "in_lobby" | "in_game";
 
-    constructor(gamePackId: string, timer: TimerInstance) {
+    constructor(host: string, gamePackId: string, timer: TimerInstance) {
       this.id = cryptoRandomString({length: 6, type: 'distinguishable'});
+      this.host = host;
       this.players = [];
       this.spies = [];
       this.civilians = [];
@@ -21,29 +22,47 @@ export class RoomInstance {
       this.timer = timer;
       this.gameState = "in_lobby";
     }
-    addPlayer(player: PlayerInstance) {
-      this.players.push(player);
+    getId() {
+      return this.id;
+    }
+    setId(newId: string) {
+      this.id = newId;
+    }
+    getHost() {
+      return this.host;
+    }
+    setHost(newHost: string) {
+      this.host = newHost;
+    }
+    addPlayer(playerId: string) {
+      if (!this.players.includes(playerId)) {
+        this.players.push(playerId);
+      }
     }
     removePlayer(playerId: string) {
-      this.players = this.players.filter(player => player.getId() !== playerId);
+      this.players = this.players.filter(pId => pId !== playerId);
     }
     getPlayers() {
       return this.players;
     }
-    addSpy(player: PlayerInstance) {
-      this.spies.push(player);
+    addSpy(playerId: string) {
+      if (!this.spies.includes(playerId)) {
+        this.spies.push(playerId);
+      }
     }
     removeSpy(playerId: string) {
-      this.spies = this.spies.filter(player => player.getId() !== playerId);
+      this.spies = this.spies.filter(pId => pId !== playerId);
     }
     getSpies() {
       return this.spies;
     }
-    addCivilian(player: PlayerInstance) {
-      this.civilians.push(player);
+    addCivilian(playerId: string) {
+      if (!this.civilians.includes(playerId)) {
+        this.civilians.push(playerId);
+      }
     }
     removeCivilian(playerId: string) {
-      this.civilians = this.civilians.filter(player => player.getId() !== playerId);
+      this.civilians = this.civilians.filter(pId => pId !== playerId);
     }
     getCivilians() {
       return this.civilians;
@@ -80,17 +99,5 @@ export class RoomInstance {
       this.civilians = [];
       this.timer.reset(0);
       this.setGameState("in_lobby");
-    }
-    getId() {
-      return this.id;
-    }
-    setId(newId: string) {
-      this.id = newId;
-    }
-    getHost() {
-      return this.host;
-    }
-    setHost(newHost: PlayerInstance) {
-      this.host = newHost;
     }
 	}

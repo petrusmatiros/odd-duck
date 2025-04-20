@@ -10,8 +10,10 @@ import path from "node:path";
 
 import { Logger } from "../utils/log-utils";
 
-import type { PlayerInstance } from "./PlayerInstance/PlayerInstance";
-import type { RoomInstance } from "./RoomInstance/Roominstance";
+import { PlayerInstance } from "./PlayerInstance/PlayerInstance";
+import { RoomInstance } from "./RoomInstance/Roominstance";
+import { TimerInstance } from "./TimerInstance/TimerInstance";
+import { entertainment_pack } from "../data/packs/entertainment_pack";
 
 // load environment variables from .env file
 config();
@@ -76,6 +78,7 @@ server.listen(PORT, () => {
 
 const roomsHandler = new Map<string, RoomInstance>();
 const playersHandler = new Map<string, PlayerInstance>();
+const gamePacksHandler = new Map<string, GamePack>();
 
 // no disconnect event will be emitted if the client is not connected
 io.use((socket, next) => {
@@ -93,6 +96,16 @@ io.use((socket, next) => {
 	logger.log(`Token: ${token}`);
 	next();
 });
+
+gamePacksHandler.set("entertainment_pack", entertainment_pack);
+const player1 = new PlayerInstance("123", "potato potato");
+const room1 = new RoomInstance(player1.getId(), "entertainment_pack", new TimerInstance(5));
+roomsHandler.set(room1.id, room1);
+playersHandler.set(player1.getId(), player1);
+
+console.log("roomsHandler", roomsHandler);
+console.log("playersHandler", playersHandler);
+console.log("gamePacksHandler", gamePacksHandler);
 
 io.on("connection", (socket) => {
 	logger.log("a user connected");
