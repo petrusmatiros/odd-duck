@@ -1,8 +1,10 @@
+import cryptoRandomString from "crypto-random-string";
 import type { PlayerInstance } from "../PlayerInstance/PlayerInstance";
 import type { TimerInstance } from "../TimerInstance/TimerInstance";
 
 export class RoomInstance {
 		id: string;
+    host: PlayerInstance;
 		players: PlayerInstance[];
     spies: PlayerInstance[];
     civilians: PlayerInstance[];
@@ -10,8 +12,8 @@ export class RoomInstance {
 		timer: TimerInstance;
 		gameState: "in_lobby" | "in_game";
 
-    constructor(id: string, gamePackId: string, timer: TimerInstance) {
-      this.id = id;
+    constructor(gamePackId: string, timer: TimerInstance) {
+      this.id = cryptoRandomString({length: 6, type: 'distinguishable'});
       this.players = [];
       this.spies = [];
       this.civilians = [];
@@ -84,5 +86,11 @@ export class RoomInstance {
     }
     setId(newId: string) {
       this.id = newId;
+    }
+    getHost() {
+      return this.host;
+    }
+    setHost(newHost: PlayerInstance) {
+      this.host = newHost;
     }
 	}

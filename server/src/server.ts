@@ -5,10 +5,13 @@ import { createServer } from "node:http";
 import { Server } from "socket.io";
 import helmet from "helmet";
 import cryptoRandomString from "crypto-random-string";
+import path from "node:path";
 // import session from "express-session";
 
-import path from "node:path";
 import { Logger } from "../utils/log-utils";
+
+import type { PlayerInstance } from "./PlayerInstance/PlayerInstance";
+import type { RoomInstance } from "./RoomInstance/Roominstance";
 
 // load environment variables from .env file
 config();
@@ -71,6 +74,9 @@ server.listen(PORT, () => {
 	logger.log(`Server is running on port ${PORT}`);
 });
 
+const roomsHandler = new Map<string, RoomInstance>();
+const playersHandler = new Map<string, PlayerInstance>();
+
 // no disconnect event will be emitted if the client is not connected
 io.use((socket, next) => {
 	const token = socket.handshake.auth.token;
@@ -90,8 +96,6 @@ io.use((socket, next) => {
 
 io.on("connection", (socket) => {
 	logger.log("a user connected");
-	const randomString = cryptoRandomString({length: 6, type: 'distinguishable'});
-	logger.log(`Random string: ${randomString}`);
 	socket.on("disconnect", () => {
 		logger.log("user disconnected");
 
