@@ -3,8 +3,8 @@ export class TimerInstance {
   durationMinutes: number;
   interval: NodeJS.Timeout | null;
 
-  constructor(id: string, durationMinutes: number) {
-    this.id = id;
+  constructor(durationMinutes: number) {
+    this.id = crypto.randomUUID();
     this.durationMinutes = durationMinutes;
     this.interval = null;
   }

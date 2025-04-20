@@ -25,23 +25,23 @@ export class RoomInstance {
     removePlayer(playerId: string) {
       this.players = this.players.filter(player => player.getId() !== playerId);
     }
+    getPlayers() {
+      return this.players;
+    }
     addSpy(player: PlayerInstance) {
       this.spies.push(player);
     }
     removeSpy(playerId: string) {
       this.spies = this.spies.filter(player => player.getId() !== playerId);
     }
+    getSpies() {
+      return this.spies;
+    }
     addCivilian(player: PlayerInstance) {
       this.civilians.push(player);
     }
     removeCivilian(playerId: string) {
       this.civilians = this.civilians.filter(player => player.getId() !== playerId);
-    }
-    getPlayers() {
-      return this.players;
-    }
-    getSpies() {
-      return this.spies;
     }
     getCivilians() {
       return this.civilians;
@@ -54,6 +54,9 @@ export class RoomInstance {
     }
     getTimer() {
       return this.timer;
+    }
+    setTimer(newTimer: TimerInstance) {
+      this.timer = newTimer;
     }
     getGameState() {
       return this.gameState;
