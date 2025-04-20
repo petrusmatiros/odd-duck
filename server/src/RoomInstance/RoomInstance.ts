@@ -1,0 +1,85 @@
+import type { PlayerInstance } from "../PlayerInstance/PlayerInstance";
+import type { TimerInstance } from "../TimerInstance/TimerInstance";
+
+export class RoomInstance {
+		id: string;
+		players: PlayerInstance[];
+    spies: PlayerInstance[];
+    civilians: PlayerInstance[];
+		gamePackId: string;
+		timer: TimerInstance;
+		gameState: "in_lobby" | "in_game";
+
+    constructor(id: string, gamePackId: string, timer: TimerInstance) {
+      this.id = id;
+      this.players = [];
+      this.spies = [];
+      this.civilians = [];
+      this.gamePackId = gamePackId;
+      this.timer = timer;
+      this.gameState = "in_lobby";
+    }
+    addPlayer(player: PlayerInstance) {
+      this.players.push(player);
+    }
+    removePlayer(playerId: string) {
+      this.players = this.players.filter(player => player.getId() !== playerId);
+    }
+    addSpy(player: PlayerInstance) {
+      this.spies.push(player);
+    }
+    removeSpy(playerId: string) {
+      this.spies = this.spies.filter(player => player.getId() !== playerId);
+    }
+    addCivilian(player: PlayerInstance) {
+      this.civilians.push(player);
+    }
+    removeCivilian(playerId: string) {
+      this.civilians = this.civilians.filter(player => player.getId() !== playerId);
+    }
+    getPlayers() {
+      return this.players;
+    }
+    getSpies() {
+      return this.spies;
+    }
+    getCivilians() {
+      return this.civilians;
+    }
+    getGamePackId() {
+      return this.gamePackId;
+    }
+    setGamePackId(newGamePackId: string) {
+      this.gamePackId = newGamePackId;
+    }
+    getTimer() {
+      return this.timer;
+    }
+    getGameState() {
+      return this.gameState;
+    }
+    setGameState(newState: "in_lobby" | "in_game") {
+      this.gameState = newState;
+    }
+    startGame() {
+      this.setGameState("in_game");
+      this.timer.start();
+    }
+    endGame() {
+      this.setGameState("in_lobby");
+      this.timer.stop();
+    }
+    resetGame() {
+      this.players = [];
+      this.spies = [];
+      this.civilians = [];
+      this.timer.reset(0);
+      this.setGameState("in_lobby");
+    }
+    getId() {
+      return this.id;
+    }
+    setId(newId: string) {
+      this.id = newId;
+    }
+	}

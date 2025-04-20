@@ -4,6 +4,7 @@ import { config } from "dotenv";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import helmet from "helmet";
+import cryptoRandomString from "crypto-random-string";
 // import session from "express-session";
 
 import path from "node:path";
@@ -89,6 +90,8 @@ io.use((socket, next) => {
 
 io.on("connection", (socket) => {
 	logger.log("a user connected");
+	const randomString = cryptoRandomString({length: 6, type: 'distinguishable'});
+	logger.log(`Random string: ${randomString}`);
 	socket.on("disconnect", () => {
 		logger.log("user disconnected");
 
