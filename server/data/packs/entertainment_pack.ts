@@ -1,3 +1,5 @@
+import type { GamePack } from "../types";
+
 export  const entertainment_pack: GamePack = {
   id: "entertainment_pack",
   title: "Entertainment Pack",

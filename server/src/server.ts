@@ -14,6 +14,7 @@ import { PlayerInstance } from "./PlayerInstance/PlayerInstance";
 import { RoomInstance } from "./RoomInstance/Roominstance";
 import { TimerInstance } from "./TimerInstance/TimerInstance";
 import { entertainment_pack } from "../data/packs/entertainment_pack";
+import type { GamePack } from "../data/types";
 
 // load environment variables from .env file
 config();
@@ -80,37 +81,65 @@ const roomsRegistry = new Map<string, RoomInstance>();
 const playersRegistry = new Map<string, PlayerInstance>();
 const gamePacksRegistry = new Map<string, GamePack>();
 
-// no disconnect event will be emitted if the client is not connected
-io.use((socket, next) => {
-	const token = socket.handshake.auth.token;
-	const id = socket.id;
-
-	if (!token) {
-		logger.log("No token provided");
-		return next(new Error("Authentication error"));
-	}
-
-	// Verify the token here (e.g., using JWT)
-	// If valid, call next()
-	// If invalid, call next(new Error("Authentication error"))
-	logger.log(`Token: ${token}`);
-	next();
-});
-
 gamePacksRegistry.set("entertainment_pack", entertainment_pack);
 const player1 = new PlayerInstance("123", "potato potato");
-const room1 = new RoomInstance(player1.getId(), "entertainment_pack", new TimerInstance(5));
+const room1 = new RoomInstance(
+	player1.getId(),
+	"entertainment_pack",
+	new TimerInstance(5),
+);
 roomsRegistry.set(room1.id, room1);
 playersRegistry.set(player1.getId(), player1);
 
-console.log("roomsRegistry", roomsRegistry);
-console.log("playersRegistry", playersRegistry);
-console.log("gamePacksRegistry", gamePacksRegistry);
+logger.log("roomsRegistry", roomsRegistry);
+logger.log("playersRegistry", playersRegistry);
+logger.log("gamePacksRegistry", gamePacksRegistry);
 
-io.on("connection", (socket) => {
-	logger.log("a user connected");
+const unvalidatedNamespaceConstant = process.env.WS_UNVALIDATED_NAMESPACE;
+const validatedNamespaceConstant = process.env.WS_VALIDATED_NAMESPACE;
+const unvalidatedNamespace = io.of(`/${unvalidatedNamespaceConstant}`);
+const validatedNamespace = io.of(`/${validatedNamespaceConstant}`);
+
+unvalidatedNamespace.on("connection", (socket) => {
+	const token = socket.handshake.auth.token;
+	logger.log({
+		socketId: socket.id,
+		token: token,
+		namespace: unvalidatedNamespaceConstant,
+		message: "a user connected",
+	});
+
+	const isValidToken = playersRegistry.has(token);
+	if (!isValidToken) {
+		logger.log(
+			{
+				socketId: socket.id,
+				token: token,
+				namespace: unvalidatedNamespaceConstant,
+				message: "No player instance found for token",
+			}
+		);
+		const newUUID = crypto.randomUUID();
+		logger.log(
+			{
+				socketId: socket.id,
+				token: token,
+				namespace: unvalidatedNamespaceConstant,
+				message: "Creating new player instance",
+			}
+		);
+		socket.emit("new_player", { uuid: newUUID });
+		playersRegistry.set(newUUID, new PlayerInstance(newUUID, ""));
+	}
 	socket.on("disconnect", () => {
-		logger.log("user disconnected");
+		logger.log(
+			{
+				socketId: socket.id,
+				token: token,
+				namespace: unvalidatedNamespaceConstant,
+				message: "user disconnected",
+			}
+		);
 
 		// // join the room named 'some room'
 		// socket.join('some room');
@@ -123,5 +152,101 @@ io.on("connection", (socket) => {
 
 		// // leave the room
 		// socket.leave('some room');
+	});
+});
+
+// no disconnect event will be emitted if the client is not connected
+validatedNamespace.use((socket, next) => {
+	const token = socket.handshake.auth.token;
+	logger.log(
+		{
+			socketId: socket.id,
+			token: token,
+			namespace: validatedNamespaceConstant,
+			message: "a user is attempting to connect to validated namespace",
+		}
+	);
+
+	if (!token) {
+		logger.log(
+			{
+				socketId: socket.id,
+				token: token,
+				namespace: validatedNamespaceConstant,
+				message: "No token provided",
+			}
+		);
+		next(new Error("Authentication error"));
+		return;
+	}
+
+	const isValidToken = playersRegistry.has(token);
+	if (!isValidToken) {
+		logger.log(
+			{
+				socketId: socket.id,
+				token: token,
+				namespace: validatedNamespaceConstant,
+				message: "No player instance found for token",
+			}
+		);
+		next(new Error("Authentication error"));
+		return;
+	}
+
+	logger.log(
+		{
+			socketId: socket.id,
+			token: token,
+			namespace: validatedNamespaceConstant,
+			message: "Player instance found for token",
+		}
+	);
+	next();
+});
+
+validatedNamespace.on("connection", (socket) => {
+	logger.log(
+		{
+			socketId: socket.id,
+			token: socket.handshake.auth.token,
+			namespace: validatedNamespaceConstant,
+			message: "a user connected",
+		}
+	);
+	const token = socket.handshake.auth.token;
+	const player = playersRegistry.get(token);
+
+	logger.log(
+		{
+			socketId: socket.id,
+			token: token,
+			namespace: validatedNamespaceConstant,
+			message: "player instance found for token",
+			data: player,
+		}
+	);
+
+	socket.on("validated_player", (data) => {
+		logger.log(
+			{
+				socketId: socket.id,
+				token: token,
+				namespace: validatedNamespaceConstant,
+				message: "validated player",
+				data: data,
+			}
+		);
+	});
+
+	socket.on("disconnect", () => {
+		logger.log(
+			{
+				socketId: socket.id,
+				token: token,
+				namespace: validatedNamespaceConstant,
+				message: "user disconnected",
+			}
+		);
 	});
 });

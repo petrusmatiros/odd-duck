@@ -32,7 +32,7 @@ type GameCategory =
  * GamePack is a collection of game locations, each with its own translations and images.
  * Should have 20 locations, where each location has atleast 10 roles.
  */
-interface GamePack {
+export interface GamePack {
 	id: string;
 	title: string;
 	locations: GameLocation[];

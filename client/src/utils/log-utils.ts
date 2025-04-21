@@ -4,29 +4,32 @@ export class Logger {
 		this.prefix = prefix;
 	}
 
-	private formatMessage(message: string, ...args: unknown[]) {
+	private consoleLogger = (type: "log" | "error" | "warn" | "info" | "debug" | "trace", ...args: unknown[]) => {
+		const message = this.formatMessage(...args);
+		console[type](message.prefix, ...args);
+	};
+
+	private formatMessage(...args: unknown[]) {
 		const timestamp = new Date().toISOString();
-		const updatedMessage =
-			args.length > 0 ? `${message} ${args.join(" ")}` : message;
-		return `[${timestamp}] [${this.prefix}] ${updatedMessage}`;
+		return { prefix: `[${timestamp}] [${this.prefix}]`, ...args };
 	}
 
-	log(message: string, ...args: unknown[]) {
-		console.log(this.formatMessage(message, ...args));
+	log(...args: unknown[]) {
+		this.consoleLogger("log", ...args);
 	}
-	error(message: string, ...args: unknown[]) {
-		console.error(this.formatMessage(message, ...args));
+	error(...args: unknown[]) {
+		this.consoleLogger("error", ...args);
 	}
-	warn(message: string, ...args: unknown[]) {
-		console.warn(this.formatMessage(message, ...args));
+	warn(...args: unknown[]) {
+		this.consoleLogger("warn", ...args);
 	}
-	info(message: string, ...args: unknown[]) {
-		console.info(this.formatMessage(message, ...args));
+	info(...args: unknown[]) {
+		this.consoleLogger("info", ...args);
 	}
-	debug(message: string, ...args: unknown[]) {
-		console.debug(this.formatMessage(message, ...args));
+	debug(...args: unknown[]) {
+		this.consoleLogger("debug", ...args);
 	}
-	trace(message: string, ...args: unknown[]) {
-		console.trace(this.formatMessage(message, ...args));
+	trace(...args: unknown[]) {
+		this.consoleLogger("trace", ...args);
 	}
 }

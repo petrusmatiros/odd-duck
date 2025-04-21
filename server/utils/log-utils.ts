@@ -1,33 +1,40 @@
 import colors from "yoctocolors";
+import util from "node:util";
 export class Logger {
 	private prefix: string;
 	constructor(prefix: string) {
 		this.prefix = prefix;
 	}
 
-	private formatMessage(message: string, ...args: unknown[]) {
-		const timestamp = new Date().toISOString();
-		const updatedMessage =
-			args.length > 0 ? `${message} ${args.join(" ")}` : message;
-		return `[${timestamp}] [${this.prefix}] ${updatedMessage}`;
+	private formatArg(arg: unknown): string {
+		if (typeof arg === "string") {
+			return arg;
+		}
+		return util.inspect(arg, { depth: 2, colors: true });
 	}
 
-	log(message: string, ...args: unknown[]) {
-		console.log(this.formatMessage(message, ...args));
+	private formatMessage(...args: unknown[]) {
+		const timestamp = new Date().toISOString();
+		const formattedArgs = args.map(this.formatArg).join(" ");
+		return `[${timestamp}] [${this.prefix}] ${formattedArgs}`;
 	}
-	error(message: string, ...args: unknown[]) {
-		console.error(colors.red(this.formatMessage(message, ...args)));
+
+	log(...args: unknown[]) {
+		console.log(this.formatMessage(...args));
 	}
-	warn(message: string, ...args: unknown[]) {
-		console.warn(colors.yellow(this.formatMessage(message, ...args)));
+	error(...args: unknown[]) {
+		console.error(colors.red(this.formatMessage(...args)));
 	}
-	info(message: string, ...args: unknown[]) {
-		console.info(colors.cyan(this.formatMessage(message, ...args)));
+	warn(...args: unknown[]) {
+		console.warn(colors.yellow(this.formatMessage(...args)));
 	}
-	debug(message: string, ...args: unknown[]) {
-		console.debug(this.formatMessage(message, ...args));
+	info(...args: unknown[]) {
+		console.info(colors.cyan(this.formatMessage(...args)));
 	}
-	trace(message: string, ...args: unknown[]) {
-		console.trace(this.formatMessage(message, ...args));
+	debug(...args: unknown[]) {
+		console.debug(this.formatMessage(...args));
+	}
+	trace(...args: unknown[]) {
+		console.trace(this.formatMessage(...args));
 	}
 }

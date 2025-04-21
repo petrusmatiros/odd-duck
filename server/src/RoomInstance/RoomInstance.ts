@@ -1,13 +1,13 @@
 import cryptoRandomString from "crypto-random-string";
-import type { PlayerInstance } from "../PlayerInstance/PlayerInstance";
 import type { TimerInstance } from "../TimerInstance/TimerInstance";
+import type { PlayerInstance } from "../PlayerInstance/PlayerInstance";
 
 export class RoomInstance {
 		id: string;
-    host: string;
-		players: string[];
-    spies: string[];
-    civilians: string[];
+    host: PlayerInstance["id"];
+		players: PlayerInstance["id"][];
+    spies: PlayerInstance["id"][];
+    civilians: PlayerInstance["id"][];
 		gamePackId: string;
 		timer: TimerInstance;
 		gameState: "in_lobby" | "in_game";

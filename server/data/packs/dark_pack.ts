@@ -1,3 +1,5 @@
+import type { GamePack } from "../types";
+
 export const dark_pack: GamePack = {
 	id: "dark_pack",
 	title: "Dark Pack",

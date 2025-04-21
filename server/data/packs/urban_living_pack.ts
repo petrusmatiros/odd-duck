@@ -1,3 +1,5 @@
+import type { GamePack } from "../types";
+
 export const urban_living_pack: GamePack = {
   id: "urban_living_pack",
   title: "Urban Living Pack",
