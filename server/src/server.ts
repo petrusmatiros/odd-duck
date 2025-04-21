@@ -9,7 +9,7 @@ import path from "node:path";
 import { Logger } from "../utils/log-utils";
 
 import { PlayerInstance } from "./PlayerInstance/PlayerInstance";
-import type { RoomInstance } from "./RoomInstance/Roominstance";
+import { RoomInstance } from "./RoomInstance/Roominstance";
 import { entertainment_pack } from "../data/packs/entertainment_pack";
 import type { GamePack } from "../data/types";
 
@@ -205,59 +205,136 @@ validatedNamespace.on("connection", (socket) => {
 		});
 	});
 
-	socket.on(
-		"join_game",
-		(data: { name: string; code: string }) => {
+	socket.on("create_game", (data: { name: string }) => {
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			namespace: validatedNamespaceConstant,
+			message: "create room",
+			data: data,
+		});
+
+		// Check if player already exists
+		const player = playersRegistry.get(token);
+		if (!player) {
 			logger.log({
 				socketId: socket.id,
 				token: token,
 				namespace: validatedNamespaceConstant,
-				message: "create room",
-				data: data,
+				message: "No player instance found for token",
 			});
-			const player = playersRegistry.get(token);
-			if (!player) {
-				logger.log({
-					socketId: socket.id,
-					token: token,
-					namespace: validatedNamespaceConstant,
-					message: "No player instance found for token",
-				});
-				return;
-			}
-			const room = roomsRegistry.get(data.code);
-			if (!room) {
-				logger.log({
-					socketId: socket.id,
-					token: token,
-					namespace: validatedNamespaceConstant,
-					message: "No room instance found for code",
-				});
-				return;
-			}
-			if (room.getGameState() === 'in_game') {
-				logger.log({
-					socketId: socket.id,
-					token: token,
-					namespace: validatedNamespaceConstant,
-					message: "Game is already in progress",
-				});
-				return;
-			}
-			room.addPlayer(player.getId());
-			socket.join(room.id);
-			socket.emit("joined_game", {
+			return;
+		}
+
+		// Set player name
+		player.setName(data.name);
+
+		// Create new room
+		const newRoom = new RoomInstance(player.getId());
+
+		// Add room to registry
+		roomsRegistry.set(newRoom.getId(), newRoom);
+
+		// Add player to players array
+		newRoom.addPlayer(player.getId());
+
+		// Let socket join the room
+		socket.join(newRoom.getId());
+
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			namespace: validatedNamespaceConstant,
+			message: "new room created",
+			data: newRoom,
+		});
+
+		socket.emit("entered_game", {
+			roomCode: newRoom.getId(),
+		});
+	});
+
+	socket.on("join_game", (data: { name: string; code: string }) => {
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			namespace: validatedNamespaceConstant,
+			message: "create room",
+			data: data,
+		});
+
+		// Check if player already exists
+		const player = playersRegistry.get(token);
+		if (!player) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				namespace: validatedNamespaceConstant,
+				message: "No player instance found for token",
+			});
+			return;
+		}
+
+		// Set player name
+		player.setName(data.name);
+
+		// Check if room already exists
+		const room = roomsRegistry.get(data.code);
+		if (!room) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				namespace: validatedNamespaceConstant,
+				message: "No room instance found for code",
+			});
+			return;
+		}
+
+		// Check if player is already in the room
+		if (room.getPlayers().includes(player.getId())) {
+			// TODO: need to handle logic here to rejoin? or will this ever happen?
+			// If a player is already apart of the players, and you cannot join when it's in game, that means this player must rejoin the game since they are apart of it and accidentally disconnected
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				namespace: validatedNamespaceConstant,
+				message: "Player already in room",
+			});
+
+			socket.emit("entered_game", {
 				roomCode: room.id,
 			});
+			return;
+		}
 
-			// Send to all players in the room (also the new player)
-			socket.to(room.getId()).emit("player_joined", {
-				playerId: player.getId(),
-				playerName: data.name,
+		// Check if game is already in progress
+		if (room.getGameState() === "in_game") {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				namespace: validatedNamespaceConstant,
+				message: "Game is already in progress",
 			});
+			return;
+		}
 
-		},
-	);
+		// Add player to players array
+		room.addPlayer(player.getId());
+
+		// Let socket join the room
+		socket.join(room.id);
+
+		// Emit to the player that they have joined the game
+		socket.emit("joined_game", {
+			roomCode: room.id,
+		});
+
+		// Send to all players in the room (except the sender)
+		socket.broadcast.to(room.getId()).emit("player_joined", {
+			playerId: player.getId(),
+			playerName: data.name,
+		});
+	});
 
 	socket.on("disconnect", () => {
 		logger.log({

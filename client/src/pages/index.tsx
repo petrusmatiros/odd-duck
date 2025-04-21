@@ -3,18 +3,21 @@ import { Logger } from "@/utils/log-utils";
 import Image from "next/image";
 import Popup from "@/components/Popup/dialog";
 import { getCookie, setCookie } from "cookies-next";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "next/router";
 
 export default function Index() {
+	const logger = new Logger("Client");
+	const router = useRouter();
+	const [cookieToken, setCookieToken] = useState<string | null>(
+		(getCookie("token") as string) || null,
+	);
+	const validatedWsClient = useRef<WebsocketClient | null>(null);
 
-	const [cookieToken, setCookieToken] = useState<string | null>(getCookie("token") as string || null);
 	const newPlayerWsClient = new WebsocketClient(
 		`${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_NEW_PLAYER_NAMESPACE}`,
-		cookieToken|| "",
+		cookieToken || "",
 	);
-	let validatedWsClient: WebsocketClient | null = null;
-
-	const logger = new Logger("Client");
 
 	newPlayerWsClient.socket.on("connect", () => {
 		logger.log("Connected to server");
@@ -32,15 +35,23 @@ export default function Index() {
 			sameSite: "strict",
 			secure: true,
 			maxAge: 60 * 60 * 24, // 24 hours
-		})
+		});
 		// set new token
-		validatedWsClient = new WebsocketClient(
+		validatedWsClient.current = new WebsocketClient(
 			`${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_VALIDATED_NAMESPACE}`,
 			data.uuid,
 		);
 		newPlayerWsClient.socket.disconnect();
 	});
 
+	validatedWsClient.current?.socket.on(
+		"entered_game",
+		(data: { roomCode: string }) => {
+			logger.log("Entered game", data);
+			// route to /room/{roomCode}
+			router.push(`/room/${data.roomCode}`);
+		},
+	);
 
 	return (
 		<>
@@ -70,6 +81,28 @@ export default function Index() {
 								className: "col-span-3",
 							},
 						]}
+						submitButtonOnClick={(e) => {
+							e.preventDefault();
+							logger.log("Create game clicked");
+							const name = (document.getElementById("name") as HTMLInputElement)
+								.value;
+								logger.log("Name", name);
+							if (!name) {
+								return;
+							}
+
+							logger.log("Name", name.length);
+
+							if (name.length < 1 || name.length > 20) {
+								return;
+							}
+
+							logger.log("creating game...", name);
+
+							validatedWsClient.current?.socket.emit("create_game", {
+								name: name,
+							});
+						}}
 					/>
 
 					<Popup
@@ -97,7 +130,7 @@ export default function Index() {
 									if (value.length > 20) {
 										e.target.value = value.slice(0, 20);
 									}
-								}
+								},
 							},
 							{
 								id: "code",
@@ -125,8 +158,10 @@ export default function Index() {
 						]}
 						submitButtonOnClick={(e) => {
 							e.preventDefault();
-							const name = (document.getElementById("name") as HTMLInputElement).value;
-							const code = (document.getElementById("code") as HTMLInputElement).value;
+							const name = (document.getElementById("name") as HTMLInputElement)
+								.value;
+							const code = (document.getElementById("code") as HTMLInputElement)
+								.value;
 
 							if (!name || !code) {
 								return;
@@ -140,7 +175,7 @@ export default function Index() {
 								return;
 							}
 
-							validatedWsClient?.socket.emit("join_game", {
+							validatedWsClient.current?.socket.emit("join_game", {
 								token: cookieToken,
 								name: name,
 								code: code,

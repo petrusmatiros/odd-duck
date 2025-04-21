@@ -1,6 +1,6 @@
 type GameSupportedLanguages = "en" | "sv";
 
-interface GameLocation {
+export interface GameLocation {
 	id: Lowercase<string>;
 	img_url: string;
 	translations: Record<GameSupportedLanguages, GameTranslation>;
