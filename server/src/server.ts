@@ -249,7 +249,9 @@ validatedNamespace.on("connection", (socket) => {
 			socket.emit("joined_game", {
 				roomCode: room.id,
 			});
-			socket.to(room.id).emit("player_joined", {
+
+			// Send to all players in the room (also the new player)
+			socket.to(room.getId()).emit("player_joined", {
 				playerId: player.getId(),
 				playerName: data.name,
 			});
