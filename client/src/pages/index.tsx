@@ -3,15 +3,29 @@ import { Logger } from "@/utils/log-utils";
 import Image from "next/image";
 import Popup from "@/components/Popup/dialog";
 import { getCookie, setCookie } from "cookies-next";
+import { useState } from "react";
 
 export default function Index() {
+
+	const [cookieToken, setCookieToken] = useState<string | null>(getCookie("token") as string || null);
 	const newPlayerWsClient = new WebsocketClient(
 		`${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_NEW_PLAYER_NAMESPACE}`,
-		getCookie("token") as string || "",
+		cookieToken|| "",
 	);
 	let validatedWsClient: WebsocketClient | null = null;
 
 	const logger = new Logger("Client");
+
+	newPlayerWsClient.socket.on("connect", () => {
+		logger.log("Connected to server");
+	});
+	newPlayerWsClient.socket.on("connect_error ", (err: unknown) => {
+		logger.log("Connection error", err);
+		logger.log("Connection error");
+	});
+	newPlayerWsClient.socket.on("disconnect", () => {
+		logger.log("Disconnected from server");
+	});
 
 	newPlayerWsClient.socket.on("new_player", (data: { uuid: string }) => {
 		setCookie("token", data.uuid, {
@@ -27,16 +41,6 @@ export default function Index() {
 		newPlayerWsClient.socket.disconnect();
 	});
 
-	newPlayerWsClient.socket.on("connect", () => {
-		logger.log("Connected to server");
-	});
-	newPlayerWsClient.socket.on("connect_error ", (err: unknown) => {
-		logger.log("Connection error", err);
-		logger.log("Connection error");
-	});
-	newPlayerWsClient.socket.on("disconnect", () => {
-		logger.log("Disconnected from server");
-	});
 
 	return (
 		<>
@@ -119,6 +123,29 @@ export default function Index() {
 								},
 							},
 						]}
+						submitButtonOnClick={(e) => {
+							e.preventDefault();
+							const name = (document.getElementById("name") as HTMLInputElement).value;
+							const code = (document.getElementById("code") as HTMLInputElement).value;
+
+							if (!name || !code) {
+								return;
+							}
+
+							if (name.length < 1 || name.length > 20) {
+								return;
+							}
+
+							if (code.length !== 6) {
+								return;
+							}
+
+							validatedWsClient?.socket.emit("join_game", {
+								token: cookieToken,
+								name: name,
+								code: code,
+							});
+						}}
 					/>
 				</div>
 			</div>

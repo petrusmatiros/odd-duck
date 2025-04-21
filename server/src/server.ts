@@ -9,8 +9,7 @@ import path from "node:path";
 import { Logger } from "../utils/log-utils";
 
 import { PlayerInstance } from "./PlayerInstance/PlayerInstance";
-import { RoomInstance } from "./RoomInstance/Roominstance";
-import { TimerInstance } from "./TimerInstance/TimerInstance";
+import type { RoomInstance } from "./RoomInstance/Roominstance";
 import { entertainment_pack } from "../data/packs/entertainment_pack";
 import type { GamePack } from "../data/types";
 
@@ -72,17 +71,6 @@ const playersRegistry = new Map<string, PlayerInstance>();
 const gamePacksRegistry = new Map<string, GamePack>();
 
 gamePacksRegistry.set("entertainment_pack", entertainment_pack);
-const player1 = new PlayerInstance("123", "potato potato");
-const room1 = new RoomInstance(
-	player1.getId(),
-	"entertainment_pack",
-	new TimerInstance(5),
-);
-roomsRegistry.set(room1.id, room1);
-playersRegistry.set(player1.getId(), player1);
-
-logger.log("roomsRegistry", roomsRegistry);
-logger.log("playersRegistry", playersRegistry);
 logger.log("gamePacksRegistry", gamePacksRegistry);
 
 const newPlayerNamespaceConstant = process.env.WS_NEW_PLAYER_NAMESPACE;
@@ -101,154 +89,180 @@ newPlayerNamespace.on("connection", (socket) => {
 
 	const isValidToken = playersRegistry.has(token);
 	if (!isValidToken) {
-		logger.log(
-			{
-				socketId: socket.id,
-				token: token,
-				namespace: newPlayerNamespaceConstant,
-				message: "No player instance found for token",
-			}
-		);
-		const newUUID = crypto.randomUUID();
-		logger.log(
-			{
-				socketId: socket.id,
-				token: token,
-				namespace: newPlayerNamespaceConstant,
-				message: "Creating new player instance",
-			}
-		);
-		socket.emit("new_player", { uuid: newUUID });
-		playersRegistry.set(newUUID, new PlayerInstance(newUUID, ""));
-	}
-
-	logger.log(
-		{
+		logger.log({
 			socketId: socket.id,
 			token: token,
 			namespace: newPlayerNamespaceConstant,
-			message: "Player instance found for token",
-		}
-	);
+			message: "No player instance found for token",
+		});
+		const newUUID = crypto.randomUUID();
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			namespace: newPlayerNamespaceConstant,
+			message: "Creating new player instance",
+		});
+		socket.emit("new_player", { uuid: newUUID });
+		playersRegistry.set(newUUID, new PlayerInstance(null));
+	}
+
+	logger.log({
+		socketId: socket.id,
+		token: token,
+		namespace: newPlayerNamespaceConstant,
+		message: "Player instance found for token",
+	});
 
 	socket.on("disconnect", () => {
-		logger.log(
-			{
-				socketId: socket.id,
-				token: token,
-				namespace: newPlayerNamespaceConstant,
-				message: "user disconnected",
-			}
-		);
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			namespace: newPlayerNamespaceConstant,
+			message: "user disconnected",
+		});
 	});
 });
 
 // no disconnect event will be emitted if the client is not connected
 validatedNamespace.use((socket, next) => {
 	const token = socket.handshake.auth.token;
-	logger.log(
-		{
+	logger.log({
+		socketId: socket.id,
+		token: token,
+		namespace: validatedNamespaceConstant,
+		message: "a user is attempting to connect to validated namespace",
+	});
+
+	if (!token) {
+		logger.log({
 			socketId: socket.id,
 			token: token,
 			namespace: validatedNamespaceConstant,
-			message: "a user is attempting to connect to validated namespace",
-		}
-	);
-
-	if (!token) {
-		logger.log(
-			{
-				socketId: socket.id,
-				token: token,
-				namespace: validatedNamespaceConstant,
-				message: "No token provided",
-			}
-		);
+			message: "No token provided",
+		});
 		next(new Error("Authentication error"));
 		return;
 	}
 
 	const isValidToken = playersRegistry.has(token);
 	if (!isValidToken) {
-		logger.log(
-			{
-				socketId: socket.id,
-				token: token,
-				namespace: validatedNamespaceConstant,
-				message: "No player instance found for token",
-			}
-		);
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			namespace: validatedNamespaceConstant,
+			message: "No player instance found for token",
+		});
 		next(new Error("Authentication error"));
 		return;
 	}
 
-	logger.log(
-		{
-			socketId: socket.id,
-			token: token,
-			namespace: validatedNamespaceConstant,
-			message: "Player instance found for token",
-		}
-	);
+	logger.log({
+		socketId: socket.id,
+		token: token,
+		namespace: validatedNamespaceConstant,
+		message: "Player instance found for token",
+	});
 	next();
 });
 
 validatedNamespace.on("connection", (socket) => {
-	logger.log(
-		{
-			socketId: socket.id,
-			token: socket.handshake.auth.token,
-			namespace: validatedNamespaceConstant,
-			message: "a user connected",
-		}
-	);
+	logger.log({
+		socketId: socket.id,
+		token: socket.handshake.auth.token,
+		namespace: validatedNamespaceConstant,
+		message: "a user connected",
+	});
 	// Retrieve token and check if player exists (should be done in middleware)
 	const token = socket.handshake.auth.token;
 
 	const player = playersRegistry.get(token);
 
-	logger.log(
-		{
+	logger.log({
+		socketId: socket.id,
+		token: token,
+		namespace: validatedNamespaceConstant,
+		message: "player instance found for token",
+		data: player,
+	});
+
+	if (!player) {
+		logger.log({
 			socketId: socket.id,
 			token: token,
 			namespace: validatedNamespaceConstant,
-			message: "player instance found for token",
-			data: player,
-		}
-	);
-
-	if (!player) {
-		logger.log(
-			{
-				socketId: socket.id,
-				token: token,
-				namespace: validatedNamespaceConstant,
-				message: "No player instance found for token",
-			}
-		);
+			message: "No player instance found for token",
+		});
 		return;
 	}
 
 	socket.on("validated_player", (data) => {
-		logger.log(
-			{
-				socketId: socket.id,
-				token: token,
-				namespace: validatedNamespaceConstant,
-				message: "validated player",
-				data: data,
-			}
-		);
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			namespace: validatedNamespaceConstant,
+			message: "validated player",
+			data: data,
+		});
 	});
 
-	socket.on("disconnect", () => {
-		logger.log(
-			{
+	socket.on(
+		"join_game",
+		(data: { name: string; code: string }) => {
+			logger.log({
 				socketId: socket.id,
 				token: token,
 				namespace: validatedNamespaceConstant,
-				message: "user disconnected",
+				message: "create room",
+				data: data,
+			});
+			const player = playersRegistry.get(token);
+			if (!player) {
+				logger.log({
+					socketId: socket.id,
+					token: token,
+					namespace: validatedNamespaceConstant,
+					message: "No player instance found for token",
+				});
+				return;
 			}
-		);
+			const room = roomsRegistry.get(data.code);
+			if (!room) {
+				logger.log({
+					socketId: socket.id,
+					token: token,
+					namespace: validatedNamespaceConstant,
+					message: "No room instance found for code",
+				});
+				return;
+			}
+			if (room.getGameState() === 'in_game') {
+				logger.log({
+					socketId: socket.id,
+					token: token,
+					namespace: validatedNamespaceConstant,
+					message: "Game is already in progress",
+				});
+				return;
+			}
+			room.addPlayer(player.getId());
+			socket.join(room.id);
+			socket.emit("joined_game", {
+				roomCode: room.id,
+			});
+			socket.to(room.id).emit("player_joined", {
+				playerId: player.getId(),
+				playerName: data.name,
+			});
+
+		},
+	);
+
+	socket.on("disconnect", () => {
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			namespace: validatedNamespaceConstant,
+			message: "user disconnected",
+		});
 	});
 });

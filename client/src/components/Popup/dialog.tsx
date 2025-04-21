@@ -26,9 +26,10 @@ interface Props {
 		minLength?: number;
 		maxLength?: number;
 		className?: string;
-		onSubmit?: () => void;
+		onClick?: (e: React.MouseEvent<HTMLInputElement, MouseEvent>) => void;
 		onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 	}[];
+	submitButtonOnClick?: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
 }
 
 export default function Popup({
@@ -37,6 +38,7 @@ export default function Popup({
 	dialogDescription,
 	submitButtonTitle,
 	inputs,
+	submitButtonOnClick,
 }: Props) {
 	return (
 		<Dialog>
@@ -78,7 +80,7 @@ export default function Popup({
 								className={clsx("col-span-3", input.className)}
 								required={input.required}
 								onChange={input.onChange}
-								onSubmit={input.onSubmit}
+								onClick={input.onClick}
 								style={{
 									padding: "0.5rem",
 									backgroundColor: hsl(255, 255, 255, 100),
@@ -89,7 +91,7 @@ export default function Popup({
 				</div>
 				<DialogFooter>
 					{submitButtonTitle && (
-						<Button type="submit" style={{ paddingInline: "1rem" }}>
+						<Button type="submit" style={{ paddingInline: "1rem" }} onClick={submitButtonOnClick}>
 							{submitButtonTitle}
 						</Button>
 					)}
