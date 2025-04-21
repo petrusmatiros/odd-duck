@@ -121,6 +121,16 @@ newPlayerNamespace.on("connection", (socket) => {
 		socket.emit("new_player", { uuid: newUUID });
 		playersRegistry.set(newUUID, new PlayerInstance(newUUID, ""));
 	}
+
+	logger.log(
+		{
+			socketId: socket.id,
+			token: token,
+			namespace: newPlayerNamespaceConstant,
+			message: "Player instance found for token",
+		}
+	);
+
 	socket.on("disconnect", () => {
 		logger.log(
 			{

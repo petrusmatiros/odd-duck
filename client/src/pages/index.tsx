@@ -1,74 +1,127 @@
 import { WebsocketClient } from "@/communication/WebsocketClient";
-import { Button } from "@/components/ui/button";
-import { Toaster } from "@/components/ui/sonner";
 import { Logger } from "@/utils/log-utils";
-import { toast } from "sonner";
 import Image from "next/image";
+import Popup from "@/components/Popup/dialog";
+import { getCookie, setCookie } from "cookies-next";
 
 export default function Index() {
-  const newPlayerWsClient = new WebsocketClient(
-    `${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_NEW_PLAYER_NAMESPACE}`,
-    "test_token",
-  );
-  let validatedWsClient: WebsocketClient | null = null;
+	const newPlayerWsClient = new WebsocketClient(
+		`${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_NEW_PLAYER_NAMESPACE}`,
+		getCookie("token") as string || "",
+	);
+	let validatedWsClient: WebsocketClient | null = null;
 
-  const logger = new Logger("Client");
+	const logger = new Logger("Client");
 
-  newPlayerWsClient.socket.on("new_player", (data: { uuid: string }) => {
-    console.log("New player", data);
-    // set new token
-    validatedWsClient = new WebsocketClient(
-      `${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_VALIDATED_NAMESPACE}`,
-      data.uuid,
-    );
-    newPlayerWsClient.socket.disconnect();
-  });
+	newPlayerWsClient.socket.on("new_player", (data: { uuid: string }) => {
+		setCookie("token", data.uuid, {
+			sameSite: "strict",
+			secure: true,
+			maxAge: 60 * 60 * 24, // 24 hours
+		})
+		// set new token
+		validatedWsClient = new WebsocketClient(
+			`${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_VALIDATED_NAMESPACE}`,
+			data.uuid,
+		);
+		newPlayerWsClient.socket.disconnect();
+	});
 
-  newPlayerWsClient.socket.on("connect", () => {
-    console.log("Connected to server");
-  });
-  newPlayerWsClient.socket.on("connect_error ", (err: unknown) => {
-    console.log("Connection error", err);
-    console.log("Connection error");
-  });
-  newPlayerWsClient.socket.on("disconnect", () => {
-    console.log("Disconnected from server");
-  });
+	newPlayerWsClient.socket.on("connect", () => {
+		console.log("Connected to server");
+	});
+	newPlayerWsClient.socket.on("connect_error ", (err: unknown) => {
+		console.log("Connection error", err);
+		console.log("Connection error");
+	});
+	newPlayerWsClient.socket.on("disconnect", () => {
+		console.log("Disconnected from server");
+	});
 
-  return (
-    <>
-      <Toaster />
-      <div className="flex flex-col items-center justify-center min-h-screen py-2">
-        <h1 className="text-4xl font-bold">Odd Duck</h1>
-        <Image
-          src="/avatars/odd_duck.webp"
-          alt="Odd Duck"
-          width={200}
-          height={200}
-        />
-        <Button
-          type="button"
-          style={{
-            width: "100%",
-            padding: "2rem",
-          }}
-          onClick={() => {
-            console.log("test");
-            toast("New game created");
-          }}
-        >
-          New Game
-        </Button>
-        <Button
-          type="button"
-          style={{
-            width: "100%",
-            padding: "2rem",
-          }}
-        >
-          Join Game
-        </Button>
-      </div>
-    </>
-  );
+	return (
+		<>
+			<div className="flex flex-col items-center justify-center min-h-screen">
+				<h1 className="text-4xl font-bold">Odd Duck</h1>
+				<Image
+					src="/avatars/odd_duck.webp"
+					alt="Odd Duck"
+					width={200}
+					height={200}
+				/>
+				<div className="flex flex-col items-center w-full gap-2">
+					<Popup
+						buttonTitle="Create Game"
+						dialogTitle="Create Game"
+						dialogDescription="What be your name veary traveller?"
+						submitButtonTitle="Create Game"
+						inputs={[
+							{
+								id: "name",
+								type: "text",
+								labelTitle: "Name",
+								placeholder: "Name",
+								required: true,
+								minLength: 1,
+								maxLength: 20,
+								className: "col-span-3",
+							},
+						]}
+					/>
+
+					<Popup
+						buttonTitle="Join Game"
+						dialogTitle="Join Game"
+						dialogDescription="What be your name veary traveller? And what be the code to the room ye be joinin?"
+						submitButtonTitle="Join Game"
+						inputs={[
+							{
+								id: "name",
+								type: "text",
+								placeholder: "Name",
+								labelTitle: "Name",
+								required: true,
+								minLength: 1,
+								maxLength: 20,
+								className: "col-span-3",
+								onChange: (e) => {
+									// must be 6 characters long, most be upper case
+									const value = e.target.value.trim();
+									if (!value) {
+										return;
+									}
+
+									if (value.length > 20) {
+										e.target.value = value.slice(0, 20);
+									}
+								}
+							},
+							{
+								id: "code",
+								type: "text",
+								placeholder: "Code",
+								labelTitle: "Code",
+								required: true,
+								minLength: 3,
+								maxLength: 20,
+								className: "col-span-3",
+								onChange: (e) => {
+									// must be 6 characters long, most be upper case
+									const value = e.target.value.trim();
+									if (!value) {
+										return;
+									}
+									const formattedValue = value.toUpperCase();
+									e.target.value = formattedValue;
+
+									if (formattedValue.length > 6) {
+										e.target.value = formattedValue.slice(0, 6);
+									}
+								},
+							},
+						]}
+					/>
+				</div>
+			</div>
+		</>
+	);
 }
