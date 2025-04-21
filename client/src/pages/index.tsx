@@ -28,14 +28,14 @@ export default function Index() {
 	});
 
 	newPlayerWsClient.socket.on("connect", () => {
-		console.log("Connected to server");
+		logger.log("Connected to server");
 	});
 	newPlayerWsClient.socket.on("connect_error ", (err: unknown) => {
-		console.log("Connection error", err);
-		console.log("Connection error");
+		logger.log("Connection error", err);
+		logger.log("Connection error");
 	});
 	newPlayerWsClient.socket.on("disconnect", () => {
-		console.log("Disconnected from server");
+		logger.log("Disconnected from server");
 	});
 
 	return (
