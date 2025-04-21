@@ -1,6 +1,6 @@
 export class PlayerInstance {
   id: string;
-  name: string;  
+  name: string | null;  
 
   constructor(id: string, name: string) {
     this.id = id;

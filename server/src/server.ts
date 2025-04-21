@@ -4,9 +4,7 @@ import { config } from "dotenv";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import helmet from "helmet";
-import cryptoRandomString from "crypto-random-string";
 import path from "node:path";
-// import session from "express-session";
 
 import { Logger } from "../utils/log-utils";
 
@@ -21,8 +19,8 @@ config();
 
 const logger = new Logger("Server");
 
-const PORT = process.env.PORT || 8080;
-const API_URL = process.env.API_URL || "http://localhost:8000";
+const PORT = process.env.WS_SERVER_PORT || 8080;
+const API_URL = process.env.WS_SERVER_URL || "http://localhost:8080";
 
 const app = express();
 const server = createServer(app);
@@ -36,14 +34,6 @@ const io = new Server(server, {
 
 // Middleware to set security headers
 io.engine.use(helmet());
-
-// // Middleware for session management
-// io.engine.use(session({
-//   secret: "keyboard cat",
-//   resave: false,
-//   saveUninitialized: true,
-//   cookie: { secure: true }
-// }));
 
 // Middleware to parse JSON requests
 app.use(express.json());
@@ -95,17 +85,17 @@ logger.log("roomsRegistry", roomsRegistry);
 logger.log("playersRegistry", playersRegistry);
 logger.log("gamePacksRegistry", gamePacksRegistry);
 
-const unvalidatedNamespaceConstant = process.env.WS_UNVALIDATED_NAMESPACE;
+const newPlayerNamespaceConstant = process.env.WS_NEW_PLAYER_NAMESPACE;
 const validatedNamespaceConstant = process.env.WS_VALIDATED_NAMESPACE;
-const unvalidatedNamespace = io.of(`/${unvalidatedNamespaceConstant}`);
+const newPlayerNamespace = io.of(`/${newPlayerNamespaceConstant}`);
 const validatedNamespace = io.of(`/${validatedNamespaceConstant}`);
 
-unvalidatedNamespace.on("connection", (socket) => {
+newPlayerNamespace.on("connection", (socket) => {
 	const token = socket.handshake.auth.token;
 	logger.log({
 		socketId: socket.id,
 		token: token,
-		namespace: unvalidatedNamespaceConstant,
+		namespace: newPlayerNamespaceConstant,
 		message: "a user connected",
 	});
 
@@ -115,7 +105,7 @@ unvalidatedNamespace.on("connection", (socket) => {
 			{
 				socketId: socket.id,
 				token: token,
-				namespace: unvalidatedNamespaceConstant,
+				namespace: newPlayerNamespaceConstant,
 				message: "No player instance found for token",
 			}
 		);
@@ -124,7 +114,7 @@ unvalidatedNamespace.on("connection", (socket) => {
 			{
 				socketId: socket.id,
 				token: token,
-				namespace: unvalidatedNamespaceConstant,
+				namespace: newPlayerNamespaceConstant,
 				message: "Creating new player instance",
 			}
 		);
@@ -136,22 +126,10 @@ unvalidatedNamespace.on("connection", (socket) => {
 			{
 				socketId: socket.id,
 				token: token,
-				namespace: unvalidatedNamespaceConstant,
+				namespace: newPlayerNamespaceConstant,
 				message: "user disconnected",
 			}
 		);
-
-		// // join the room named 'some room'
-		// socket.join('some room');
-
-		// // broadcast to all connected clients in the room
-		// io.to('some room').emit('hello', 'world');
-
-		// // broadcast to all connected clients except those in the room
-		// io.except('some room').emit('hello', 'world');
-
-		// // leave the room
-		// socket.leave('some room');
 	});
 });
 
@@ -214,7 +192,9 @@ validatedNamespace.on("connection", (socket) => {
 			message: "a user connected",
 		}
 	);
+	// Retrieve token and check if player exists (should be done in middleware)
 	const token = socket.handshake.auth.token;
+
 	const player = playersRegistry.get(token);
 
 	logger.log(
@@ -226,6 +206,18 @@ validatedNamespace.on("connection", (socket) => {
 			data: player,
 		}
 	);
+
+	if (!player) {
+		logger.log(
+			{
+				socketId: socket.id,
+				token: token,
+				namespace: validatedNamespaceConstant,
+				message: "No player instance found for token",
+			}
+		);
+		return;
+	}
 
 	socket.on("validated_player", (data) => {
 		logger.log(
