@@ -5,7 +5,7 @@ export const dark_pack: GamePack = {
 	locations: [
 		{
 			id: "haunted_house_1",
-			img_url: "https://images.unsplash.com/photo-1568605112-0f1b2b4f6b3d",
+			img_url: "https://images.unsplash.com/photo-1481018085669-2bc6e4f00eed",
 			translations: {
 				en: {
 					title: "Haunted House",
@@ -43,7 +43,7 @@ export const dark_pack: GamePack = {
 		},
 		{
 			id: "abandoned_asylum_1",
-			img_url: "https://images.unsplash.com/photo-1530144580-cf7c11c22a62",
+			img_url: "https://images.unsplash.com/photo-1484608577325-c7540cc6794d",
 			translations: {
 				en: {
 					title: "Abandoned Asylum",
@@ -81,7 +81,7 @@ export const dark_pack: GamePack = {
 		},
 		{
 			id: "dark_forest_1",
-			img_url: "https://images.unsplash.com/photo-1560522335-9a01b2d72de7",
+			img_url: "https://images.unsplash.com/photo-1483982258113-b72862e6cff6",
 			translations: {
 				en: {
 					title: "Dark Forest",
@@ -119,7 +119,7 @@ export const dark_pack: GamePack = {
 		},
 		{
 			id: "abandoned_castle_1",
-			img_url: "https://images.unsplash.com/photo-1549497657-c93a87c0f6ef",
+			img_url: "https://images.unsplash.com/photo-1580677616212-2fa929e9c2cd",
 			translations: {
 				en: {
 					title: "Abandoned Castle",
@@ -157,7 +157,7 @@ export const dark_pack: GamePack = {
 		},
 		{
 			id: "vampire_lair_1",
-			img_url: "https://images.unsplash.com/photo-1604250133141-21d77c13fe26",
+			img_url: "https://images.unsplash.com/photo-1734967640286-f8835c3209fd",
 			translations: {
 				en: {
 					title: "Vampire Lair",
@@ -195,7 +195,7 @@ export const dark_pack: GamePack = {
 		},
 		{
 			id: "crypt_1",
-			img_url: "https://images.unsplash.com/photo-1586099171895-d56a689381a1",
+			img_url: "https://images.unsplash.com/photo-1667078573958-e57723df2542",
 			translations: {
 				en: {
 					title: "Crypt",
@@ -233,7 +233,7 @@ export const dark_pack: GamePack = {
 		},
 		{
 			id: "dark_alley_1",
-			img_url: "https://images.unsplash.com/photo-1544221119-736c8c993c8e",
+			img_url: "https://images.unsplash.com/photo-1508840582138-f2e8452373d9",
 			translations: {
 				en: {
 					title: "Dark Alley",

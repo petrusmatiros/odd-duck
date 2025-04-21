@@ -76,9 +76,9 @@ server.listen(PORT, () => {
 	logger.log(`Server is running on port ${PORT}`);
 });
 
-const roomsHandler = new Map<string, RoomInstance>();
-const playersHandler = new Map<string, PlayerInstance>();
-const gamePacksHandler = new Map<string, GamePack>();
+const roomsRegistry = new Map<string, RoomInstance>();
+const playersRegistry = new Map<string, PlayerInstance>();
+const gamePacksRegistry = new Map<string, GamePack>();
 
 // no disconnect event will be emitted if the client is not connected
 io.use((socket, next) => {
@@ -97,15 +97,15 @@ io.use((socket, next) => {
 	next();
 });
 
-gamePacksHandler.set("entertainment_pack", entertainment_pack);
+gamePacksRegistry.set("entertainment_pack", entertainment_pack);
 const player1 = new PlayerInstance("123", "potato potato");
 const room1 = new RoomInstance(player1.getId(), "entertainment_pack", new TimerInstance(5));
-roomsHandler.set(room1.id, room1);
-playersHandler.set(player1.getId(), player1);
+roomsRegistry.set(room1.id, room1);
+playersRegistry.set(player1.getId(), player1);
 
-console.log("roomsHandler", roomsHandler);
-console.log("playersHandler", playersHandler);
-console.log("gamePacksHandler", gamePacksHandler);
+console.log("roomsRegistry", roomsRegistry);
+console.log("playersRegistry", playersRegistry);
+console.log("gamePacksRegistry", gamePacksRegistry);
 
 io.on("connection", (socket) => {
 	logger.log("a user connected");

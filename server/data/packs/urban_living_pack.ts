@@ -157,7 +157,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "grocery_store_1",
-      img_url: "https://images.unsplash.com/photo-1586201375761-83865001e31b",
+      img_url: "https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8",
       translations: {
         en: {
           title: "Grocery Store",
@@ -195,7 +195,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "train_station_1",
-      img_url: "https://images.unsplash.com/photo-1519223400710-1e3b8c1ed8a2",
+      img_url: "https://images.unsplash.com/photo-1495379572396-5f27a279ee91",
       translations: {
         en: {
           title: "Train Station",
@@ -233,7 +233,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "airport_1",
-      img_url: "https://images.unsplash.com/photo-1527807233830-dce5e62a76f6",
+      img_url: "https://images.unsplash.com/photo-1495658013006-a2069f54d3d7",
       translations: {
         en: {
           title: "Airport",
@@ -271,7 +271,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "fuel_station_1",
-      img_url: "https://images.unsplash.com/photo-1549921296-3a4b95c5d2db",
+      img_url: "https://images.unsplash.com/photo-1527018601619-a508a2be00cd",
       translations: {
         en: {
           title: "Fuel Station",
@@ -309,7 +309,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "dentist_1",
-      img_url: "https://images.unsplash.com/photo-1588776814546-ec7e1dfcb799",
+      img_url: "https://images.unsplash.com/photo-1598256989800-fe5f95da9787",
       translations: {
         en: {
           title: "Dentist",
@@ -347,7 +347,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "hospital_1",
-      img_url: "https://images.unsplash.com/photo-1588776814546-ec7e1dfcb799",
+      img_url: "https://images.unsplash.com/photo-1551076805-e1869033e561",
       translations: {
         en: {
           title: "Hospital",
@@ -423,7 +423,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "fire_department_1",
-      img_url: "https://images.unsplash.com/photo-1605542236561-f8e4e93c2b27",
+      img_url: "https://images.unsplash.com/photo-1697952433648-d1ad0e6cda00",
       translations: {
         en: {
           title: "Fire Department",
@@ -461,7 +461,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "parliament_1",
-      img_url: "https://images.unsplash.com/photo-1584905066893-9b4082b6b66c",
+      img_url: "https://images.unsplash.com/photo-1607778417094-1fef13315e6e",
       translations: {
         en: {
           title: "Parliament",
@@ -499,7 +499,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "gym_1",
-      img_url: "https://images.unsplash.com/photo-1599059811128-51d1ebee9c57",
+      img_url: "https://images.unsplash.com/photo-1623874514711-0f321325f318",
       translations: {
         en: {
           title: "Gym",
@@ -537,7 +537,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "cinema_1",
-      img_url: "https://images.unsplash.com/photo-1571923372069-b5b5d94c894e",
+      img_url: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c",
       translations: {
         en: {
           title: "Cinema",
@@ -575,7 +575,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "shopping_centre_1",
-      img_url: "https://images.unsplash.com/photo-1571501679680-de32f1e7aad4",
+      img_url: "https://images.unsplash.com/photo-1481437156560-3205f6a55735",
       translations: {
         en: {
           title: "Shopping Centre",
@@ -613,7 +613,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "restaurant_1",
-      img_url: "https://images.unsplash.com/photo-1588776814517-c7120ed02d50",
+      img_url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4",
       translations: {
         en: {
           title: "Restaurant",
@@ -651,7 +651,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "cafe_1",
-      img_url: "https://images.unsplash.com/photo-1598872115851-91c3bbfbe8d0",
+      img_url: "https://images.unsplash.com/photo-1521017432531-fbd92d768814",
       translations: {
         en: {
           title: "Café",
@@ -689,7 +689,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "library_1",
-      img_url: "https://images.unsplash.com/photo-1580336877165-d7b04c8c3fcb",
+      img_url: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f",
       translations: {
         en: {
           title: "Library",
@@ -727,7 +727,7 @@ export const urban_living_pack: GamePack = {
     },
     {
       id: "club_1",
-      img_url: "https://images.unsplash.com/photo-1605576040722-ea10b5b9d91f",
+      img_url: "https://images.unsplash.com/photo-1578736641330-3155e606cd40",
       translations: {
         en: {
           title: "The Club",

@@ -1,7 +1,7 @@
 export  const entertainment_pack: GamePack = {
-  id: "adventures_special_places_pack",
-  title: "Adventures & Special Places Pack",
-  category: "adventure",
+  id: "entertainment_pack",
+  title: "Entertainment Pack",
+  category: "entertainment",
   locations: [
     {
       id: "cruise_ship_1",
@@ -49,7 +49,7 @@ export  const entertainment_pack: GamePack = {
     },
     {
       id: "graveyard_1",
-      img_url: "https://images.unsplash.com/photo-1505653753535-cbbfcfbfd5d5",
+      img_url: "https://images.unsplash.com/photo-1695671516947-961b52fe1e06",
       translations: {
         en: {
           title: "Graveyard",
@@ -87,7 +87,7 @@ export  const entertainment_pack: GamePack = {
     },
     {
       id: "soccer_stadium_1",
-      img_url: "https://images.unsplash.com/photo-1508609349937-5ec4ae374ebf",
+      img_url: "https://images.unsplash.com/photo-1629217855633-79a6925d6c47",
       translations: {
         en: {
           title: "Soccer Stadium",
@@ -125,7 +125,7 @@ export  const entertainment_pack: GamePack = {
     },
     {
       id: "music_concert_1",
-      img_url: "https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2",
+      img_url: "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b",
       translations: {
         en: {
           title: "Music Concert",
@@ -163,7 +163,7 @@ export  const entertainment_pack: GamePack = {
     },
     {
       id: "amusement_park_1",
-      img_url: "https://images.unsplash.com/photo-1504462187332-ac2fcd6f54b4",
+      img_url: "https://images.unsplash.com/photo-1502136969935-8d8eef54d77b",
       translations: {
         en: {
           title: "Amusement Park",
@@ -201,7 +201,7 @@ export  const entertainment_pack: GamePack = {
     },
     {
       id: "circus_1",
-      img_url: "https://images.unsplash.com/photo-1608560864289-3c60acb2880b",
+      img_url: "https://images.unsplash.com/photo-1678270852355-7f2bbbe8811e",
       translations: {
         en: {
           title: "Circus",
@@ -239,7 +239,7 @@ export  const entertainment_pack: GamePack = {
     },
     {
       id: "theater_1",
-      img_url: "https://images.unsplash.com/photo-1618310454569-b118a87f1384",
+      img_url: "https://images.unsplash.com/photo-1562329265-95a6d7a83440",
       translations: {
         en: {
           title: "Theater",
@@ -277,7 +277,7 @@ export  const entertainment_pack: GamePack = {
     },
     {
 			id: "opera_1",
-			img_url: "https://images.unsplash.com/photo-1508264165352-258a6b16fcd1",
+			img_url: "https://images.unsplash.com/photo-1580809361436-42a7ec204889",
 			translations: {
 				en: {
 					title: "Opera",
@@ -315,7 +315,7 @@ export  const entertainment_pack: GamePack = {
 		},
     {
 			id: "kindergarten_1",
-			img_url: "https://images.unsplash.com/photo-1588072432836-e10032774350",
+			img_url: "https://images.unsplash.com/photo-1564429238817-393bd4286b2d",
 			translations: {
 				en: {
 					title: "Kindergarten",
@@ -353,7 +353,7 @@ export  const entertainment_pack: GamePack = {
 		},
     {
 			id: "beach_1",
-			img_url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+			img_url: "https://images.unsplash.com/photo-1519046904884-53103b34b206",
 			translations: {
 				en: {
 					title: "Beach",
@@ -393,7 +393,7 @@ export  const entertainment_pack: GamePack = {
 		},
     {
 			id: "retirement_home_1",
-			img_url: "https://images.unsplash.com/photo-1588776814546-ec7c848d77f8",
+			img_url: "https://images.unsplash.com/photo-1496938461470-aaa34930e2d7",
 			translations: {
 				en: {
 					title: "Retirement Home",
@@ -431,7 +431,7 @@ export  const entertainment_pack: GamePack = {
 		},
     {
 			id: "space_ship_1",
-			img_url: "https://images.unsplash.com/photo-1600180758890-6e9cfb4fe5e6",
+			img_url: "https://images.unsplash.com/photo-1451187863213-d1bcbaae3fa3",
 			translations: {
 				en: {
 					title: "Space Ship",
@@ -469,7 +469,7 @@ export  const entertainment_pack: GamePack = {
 		},
     {
 			id: "submarine_1",
-			img_url: "https://images.unsplash.com/photo-1595738443284-76fda19e72e6",
+			img_url: "https://images.unsplash.com/photo-1600119330210-e7a3f5a0d079",
 			translations: {
 				en: {
 					title: "Submarine",
@@ -507,46 +507,48 @@ export  const entertainment_pack: GamePack = {
 			},
 		},
     {
-			id: "military_base_1",
-			img_url: "https://images.unsplash.com/photo-1582069834084-43530c47a017",
+			id: "mountain_resort_1",
+			img_url: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99",
 			translations: {
 				en: {
-					title: "Military Base",
-					description: "A facility for military personnel and operations.",
+					title: "Mountain Resort",
+					description: "A resort high up the mountains to relax and enjoy nature.",
 					roles: [
-						"soldier",
-						"officer",
-						"commander",
-						"medic",
-						"engineer",
-						"pilot",
-						"intelligence officer",
-						"guard",
-						"technician",
-						"logistics officer",
+						"receptionist",
+            "guest",
+            "tourist",
+            "hiker",
+            "mountain guide",
+            "chef",
+            "cleaner",
+            "security guard",
+            "maintenance worker",
+            "outdoor instructor",
+            "resort manager",
 					],
 				},
 				sv: {
-					title: "Militärbas",
-					description: "En anläggning för militär personal och operationer.",
+					title: "Bergsanläggning",
+					description: "En anläggning högt uppe i bergen för att koppla av och njuta av naturen.",
 					roles: [
-						"soldat",
-						"officer",
-						"kommandant",
-						"sjukvårdare",
-						"ingenjör",
-						"pilot",
-						"intelligensofficer",
-						"vakt",
-						"tekniker",
-						"logistikofficer",
+						"receptionist",
+            "gäst",
+            "turist",
+            "vandrare",
+            "bergsguide",
+            "kock",
+            "städare",
+            "säkerhetsvakt",
+            "underhållsarbetare",
+            "utomhusinstruktör",
+            "anläggningschef",
 					],
 				},
 			},
 		},
     {
 			id: "archeological_site_1",
-			img_url: "https://images.unsplash.com/photo-1574180300553-87d7d617f780",
+			img_url: "https://images.unsplash.com/photo-1736840317847-ebf3ba37f8a4",
 			translations: {
 				en: {
 					title: "Archaeological Site",
@@ -586,7 +588,7 @@ export  const entertainment_pack: GamePack = {
 		},
     {
 			id: "harbour_1",
-			img_url: "https://images.unsplash.com/photo-1570630210805-0f84c7c74a69",
+			img_url: "https://images.unsplash.com/photo-1727205723792-674c5e6e1389",
 			translations: {
 				en: {
 					title: "Harbour",
@@ -606,7 +608,7 @@ export  const entertainment_pack: GamePack = {
 					],
 				},
 				sv: {
-					title: "Hamnp",
+					title: "Hamn",
 					description:
 						"En plats där fartyg lägger till och lossar last eller passagerare.",
 					roles: [
@@ -626,7 +628,7 @@ export  const entertainment_pack: GamePack = {
 		},
     {
 			id: "renfaire_1",
-			img_url: "https://images.unsplash.com/photo-1601232340622-4a7f76c28bfe",
+			img_url: "https://images.unsplash.com/photo-1699500325700-761e52eb8625",
 			translations: {
 				en: {
 					title: "Renfaire",
@@ -666,7 +668,7 @@ export  const entertainment_pack: GamePack = {
 		},
     {
 			id: "park_1",
-			img_url: "https://images.unsplash.com/photo-1506755575150-78ff0140474f",
+			img_url: "https://images.unsplash.com/photo-1585938389612-a552a28d6914",
 			translations: {
 				en: {
 					title: "Park",
@@ -706,7 +708,7 @@ export  const entertainment_pack: GamePack = {
 		},
     {
 			id: "veterinary_clinic_1",
-			img_url: "https://images.unsplash.com/photo-1572031312442-79f01604c18b",
+			img_url: "https://images.unsplash.com/photo-1725409796872-8b41e8eca929",
 			translations: {
 				en: {
 					title: "Veterinary Clinic",
@@ -746,7 +748,7 @@ export  const entertainment_pack: GamePack = {
 		},
     {
 			id: "zoo_1",
-			img_url: "https://images.unsplash.com/photo-1571941265617-6d54e3157c6a",
+			img_url: "https://images.unsplash.com/photo-1592803883394-eeaa36f92a70",
 			translations: {
 				en: {
 					title: "Zoo",

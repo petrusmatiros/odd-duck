@@ -26,6 +26,7 @@ type GameCategory =
 	| "mystery"
 	| "supernatural"
 	| "adventure"
+	| "entertainment"
 
 /**
  * GamePack is a collection of game locations, each with its own translations and images.
