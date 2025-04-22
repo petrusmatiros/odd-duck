@@ -229,6 +229,24 @@ validatedNamespace.on("connection", (socket) => {
 		// Set player name
 		player.setName(data.name);
 
+		// TODO:
+		// Ensure that player, creating the room, is not already a host of a room
+		// Iterate through all rooms, and check if the player matches the host
+		for (const room of roomsRegistry.values()) {
+			if (room.getHost() === player.getId()) {
+				logger.log({
+					socketId: socket.id,
+					token: token,
+					namespace: validatedNamespaceConstant,
+					message: "Player already a host of a room",
+				});
+
+				socket.emit("entered_game", {});
+
+				return;
+			}
+		}
+
 		// Create new room
 		const newRoom = new RoomInstance(player.getId());
 
