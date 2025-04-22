@@ -5,17 +5,21 @@ import Popup from "@/components/Popup/dialog";
 import { getCookie, setCookie } from "cookies-next";
 import { useRef, useState } from "react";
 import { useRouter } from "next/router";
+import { toast } from "sonner";
 
 export default function Index() {
-	const logger = new Logger("Client");
+	const logger = new Logger("client/index");
 	const router = useRouter();
 	const [cookieToken, setCookieToken] = useState<string | null>(
 		(getCookie("token") as string) || null,
 	);
-	const validatedWsClient = useRef<WebsocketClient | null>(null);
-
 	const newPlayerWsClient = new WebsocketClient(
 		`${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_NEW_PLAYER_NAMESPACE}`,
+		cookieToken || "",
+	);
+
+	const validatedWsClient = new WebsocketClient(
+		`${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_VALIDATED_NAMESPACE}`,
 		cookieToken || "",
 	);
 
@@ -37,21 +41,24 @@ export default function Index() {
 			maxAge: 60 * 60 * 24, // 24 hours
 		});
 		// set new token
-		validatedWsClient.current = new WebsocketClient(
-			`${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_VALIDATED_NAMESPACE}`,
-			data.uuid,
-		);
+		validatedWsClient.socket.auth = {
+			token: data.uuid,
+		}
 		newPlayerWsClient.socket.disconnect();
 	});
 
-	validatedWsClient.current?.socket.on(
+
+	validatedWsClient.socket.on(
 		"entered_game",
-		(data: { roomCode: string }) => {
+		(data: { roomCode: string, toastMessage: string }) => {
 			logger.log("Entered game", data);
+			toast(data.toastMessage);
 			// route to /room/{roomCode}
 			router.push(`/room/${data.roomCode}`);
 		},
 	);
+
+	toast("test");
 
 	return (
 		<>
@@ -66,6 +73,9 @@ export default function Index() {
 				<div className="flex flex-col items-center w-full gap-2">
 					<Popup
 						buttonTitle="Create Game"
+						triggerButtonClick={() => {
+							validatedWsClient.socket.emit("check_if_already_created_game_before");
+						}}
 						dialogTitle="Create Game"
 						dialogDescription="What be your name veary traveller?"
 						submitButtonTitle="Create Game"
@@ -99,7 +109,7 @@ export default function Index() {
 
 							logger.log("creating game...", name);
 
-							validatedWsClient.current?.socket.emit("create_game", {
+							validatedWsClient.socket.emit("create_game", {
 								name: name,
 							});
 						}}
@@ -175,7 +185,7 @@ export default function Index() {
 								return;
 							}
 
-							validatedWsClient.current?.socket.emit("join_game", {
+							validatedWsClient.socket.emit("join_game", {
 								token: cookieToken,
 								name: name,
 								code: code,

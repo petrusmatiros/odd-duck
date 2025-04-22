@@ -49,11 +49,22 @@ export class RoomInstance {
 			this.players.push(playerId);
 		}
 	}
+	/**
+	 * Removes a player from the room (removes from all lists in the room).
+	 * @param {string} playerId - The ID of the player to remove.
+	 * 
+	 */
 	removePlayer(playerId: string) {
+		// Remove player from all lists since player is the lobby list, but spies and civilians are in game lists
 		this.players = this.players.filter((pId) => pId !== playerId);
+		this.civilians = this.civilians.filter((pId) => pId !== playerId);
+		this.spies = this.spies.filter((pId) => pId !== playerId);
 	}
 	getPlayers() {
 		return this.players;
+	}
+	setPlayers(newPlayers: PlayerInstance["id"][]) {
+		this.players = newPlayers;
 	}
 	addSpy(playerId: string) {
 		if (!this.spies.includes(playerId)) {
@@ -66,6 +77,9 @@ export class RoomInstance {
 	getSpies() {
 		return this.spies;
 	}
+	setSpies(newSpies: PlayerInstance["id"][]) {
+		this.spies = newSpies;
+	}
 	addCivilian(playerId: string) {
 		if (!this.civilians.includes(playerId)) {
 			this.civilians.push(playerId);
@@ -76,6 +90,9 @@ export class RoomInstance {
 	}
 	getCivilians() {
 		return this.civilians;
+	}
+	setCivilians(newCivilians: PlayerInstance["id"][]) {
+		this.civilians = newCivilians;
 	}
 	getGamePackId() {
 		return this.gamePackId;
@@ -104,10 +121,10 @@ export class RoomInstance {
 		this.timer.stop();
 	}
 	resetGame() {
-		this.spies = [];
 		this.location = null;
     this.gamePackId = null;
 		this.civilians = [];
+		this.spies = [];
 		this.timer.reset(0);
 		this.setGameState("in_lobby");
 	}

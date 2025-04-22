@@ -14,6 +14,9 @@ import { hsl } from "@/styles/utils";
 
 interface Props {
 	buttonTitle: string;
+	triggerButtonClick?: (
+		e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+	) => void;
 	dialogTitle: string;
 	dialogDescription: string;
 	submitButtonTitle: string;
@@ -29,11 +32,14 @@ interface Props {
 		onClick?: (e: React.MouseEvent<HTMLInputElement, MouseEvent>) => void;
 		onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 	}[];
-	submitButtonOnClick?: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
+	submitButtonOnClick?: (
+		e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+	) => void;
 }
 
 export default function Popup({
 	buttonTitle,
+	triggerButtonClick,
 	dialogTitle,
 	dialogDescription,
 	submitButtonTitle,
@@ -43,10 +49,18 @@ export default function Popup({
 	return (
 		<Dialog>
 			<DialogTrigger asChild>
-				{buttonTitle && <Button variant="outline" style={{
-					paddingInline: "1rem",
-					width: "10rem",
-				}}>{buttonTitle}</Button>}
+				{buttonTitle && (
+					<Button
+						variant="outline"
+						style={{
+							paddingInline: "1rem",
+							width: "10rem",
+						}}
+						onClick={triggerButtonClick}
+					>
+						{buttonTitle}
+					</Button>
+				)}
 			</DialogTrigger>
 			<DialogContent
 				className="sm:max-w-[425px]"
@@ -91,7 +105,11 @@ export default function Popup({
 				</div>
 				<DialogFooter>
 					{submitButtonTitle && (
-						<Button type="submit" style={{ paddingInline: "1rem" }} onClick={submitButtonOnClick}>
+						<Button
+							type="submit"
+							style={{ paddingInline: "1rem" }}
+							onClick={submitButtonOnClick}
+						>
 							{submitButtonTitle}
 						</Button>
 					)}
