@@ -13,7 +13,9 @@ import { Input } from "../ui/input";
 import { hsl } from "@/styles/utils";
 
 interface Props {
-	buttonTitle: string;
+	open?: boolean;
+	withoutTriggerButton?: boolean;
+	buttonTitle?: string;
 	triggerButtonClick?: (
 		e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
 	) => void;
@@ -38,6 +40,8 @@ interface Props {
 }
 
 export default function Popup({
+	open,
+	withoutTriggerButton,
 	buttonTitle,
 	triggerButtonClick,
 	dialogTitle,
@@ -47,8 +51,8 @@ export default function Popup({
 	submitButtonOnClick,
 }: Props) {
 	return (
-		<Dialog>
-			<DialogTrigger asChild>
+		<Dialog open={open}>
+			{!withoutTriggerButton && <DialogTrigger asChild>
 				{buttonTitle && (
 					<Button
 						variant="outline"
@@ -61,7 +65,7 @@ export default function Popup({
 						{buttonTitle}
 					</Button>
 				)}
-			</DialogTrigger>
+			</DialogTrigger>}
 			<DialogContent
 				className="sm:max-w-[425px]"
 				style={{

@@ -1,10 +1,10 @@
 import { WebsocketClient } from "@/communication/WebsocketClient";
+import Popup from "@/components/Popup/Popup";
 import { Logger } from "@/utils/log-utils";
-import Image from "next/image";
-import Popup from "@/components/Popup/dialog";
 import { getCookie, setCookie } from "cookies-next";
-import { useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/router";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export default function Index() {
@@ -186,7 +186,6 @@ export default function Index() {
 							}
 
 							validatedWsClient.socket.emit("join_game", {
-								token: cookieToken,
 								name: name,
 								code: code,
 							});
