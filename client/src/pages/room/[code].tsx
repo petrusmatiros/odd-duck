@@ -37,10 +37,11 @@ export default function Page() {
       }
       setIsAllowedInRoom(data.allowed);
       logger.log("check_if_allowed_in_game_response", data);
-
-      // if allowed, show ui for name popup, take name and join game
     },
   );
+
+  // TODO: fix this:
+  validatedWsClient.socket.on("direct_join_game_response", () => {});
 
   /**
    * TODO:
@@ -109,7 +110,7 @@ export default function Page() {
             }
 
             // TODO: should this be different since this is already within lobby
-            validatedWsClient.socket.emit("join_game", {
+            validatedWsClient.socket.emit("direct_join_game", {
               name: name,
               code: roomCode,
             });
