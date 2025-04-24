@@ -48,7 +48,7 @@ app.use(express.static(pathToStaticFiles));
 
 const indexFileName = "index.html";
 
-app.get("/", (req, res) => {
+app.get("/", (_req, res) => {
 	logger.log(`Serving ${indexFileName}`);
 
 	logger.log(path.join(pathToStaticFiles, indexFileName));
@@ -73,97 +73,8 @@ const gamePacksRegistry = new Map<string, GamePack>();
 gamePacksRegistry.set("entertainment_pack", entertainment_pack);
 logger.log("gamePacksRegistry", gamePacksRegistry);
 
-const newPlayerNamespaceConstant = process.env.WS_NEW_PLAYER_NAMESPACE;
 const validatedNamespaceConstant = process.env.WS_VALIDATED_NAMESPACE;
-const newPlayerNamespace = io.of(`/${newPlayerNamespaceConstant}`);
 const validatedNamespace = io.of(`/${validatedNamespaceConstant}`);
-
-newPlayerNamespace.on("connection", (socket) => {
-	const token = socket.handshake.auth.token;
-	logger.log({
-		socketId: socket.id,
-		token: token,
-		namespace: newPlayerNamespaceConstant,
-		message: "a user connected",
-	});
-
-	const isValidToken = playersRegistry.has(token);
-	if (!isValidToken) {
-		logger.log({
-			socketId: socket.id,
-			token: token,
-			namespace: newPlayerNamespaceConstant,
-			message: "No player instance found for token",
-		});
-		const newUUID = crypto.randomUUID();
-		logger.log({
-			socketId: socket.id,
-			token: token,
-			namespace: newPlayerNamespaceConstant,
-			message: "Creating new player instance",
-		});
-		socket.emit("new_player", { uuid: newUUID });
-		playersRegistry.set(newUUID, new PlayerInstance(null));
-	}
-
-	logger.log({
-		socketId: socket.id,
-		token: token,
-		namespace: newPlayerNamespaceConstant,
-		message: "Player instance found for token",
-	});
-
-	socket.on("disconnect", () => {
-		logger.log({
-			socketId: socket.id,
-			token: token,
-			namespace: newPlayerNamespaceConstant,
-			message: "user disconnected",
-		});
-	});
-});
-
-// no disconnect event will be emitted if the client is not connected
-validatedNamespace.use((socket, next) => {
-	const token = socket.handshake.auth.token;
-	logger.log({
-		socketId: socket.id,
-		token: token,
-		namespace: validatedNamespaceConstant,
-		message: "a user is attempting to connect to validated namespace",
-	});
-
-	if (!token) {
-		logger.log({
-			socketId: socket.id,
-			token: token,
-			namespace: validatedNamespaceConstant,
-			message: "No token provided",
-		});
-		next(new Error("Authentication error"));
-		return;
-	}
-
-	const isValidToken = playersRegistry.has(token);
-	if (!isValidToken) {
-		logger.log({
-			socketId: socket.id,
-			token: token,
-			namespace: validatedNamespaceConstant,
-			message: "No player instance found for token",
-		});
-		next(new Error("Authentication error"));
-		return;
-	}
-
-	logger.log({
-		socketId: socket.id,
-		token: token,
-		namespace: validatedNamespaceConstant,
-		message: "Player instance found for token",
-	});
-	next();
-});
 
 // TODO: fix this
 function joinGameHelper(
@@ -272,19 +183,42 @@ validatedNamespace.on("connection", (socket) => {
 		socketId: socket.id,
 		token: token,
 		namespace: validatedNamespaceConstant,
-		message: "player instance found for token",
-		data: player,
+		message: "Retrieved token and player",
+		data: {
+			player: player,
+			token: token,
+		},
 	});
 
-	if (!player) {
+	// Ensure to create a new player instance and emit a new token if the player does not exist, so next time they connect, they can use the same token
+	if (!token || !player) {
 		logger.log({
 			socketId: socket.id,
 			token: token,
 			namespace: validatedNamespaceConstant,
-			message: "No player instance found for token",
+			message: "No player instance found for token or token is invalid",
 		});
-		return;
+
+		// Generate a new UUID
+		const newUUID = crypto.randomUUID();
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			namespace: validatedNamespaceConstant,
+			message: "Creating new player instance",
+		});
+		const newPlayer = new PlayerInstance(newUUID);
+		playersRegistry.set(newUUID, newPlayer);
+		socket.handshake.auth.token = newUUID;
+		socket.emit("register_new_player_token", {
+			token: newUUID,
+			toastMessage: "New player token created",
+		})
 	}
+
+	socket.on("token_test", () => {
+		console.log("token", token);
+	});
 
 	socket.on("validated_player", (data) => {
 		logger.log({

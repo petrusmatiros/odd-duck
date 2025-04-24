@@ -4,61 +4,55 @@ import { Logger } from "@/utils/log-utils";
 import { getCookie, setCookie } from "cookies-next";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+type CustomError = Error & { data: { uuid: string } };
 
 export default function Index() {
 	const logger = new Logger("client/index");
 	const router = useRouter();
-	const [cookieToken, setCookieToken] = useState<string | null>(
-		(getCookie("token") as string) || null,
-	);
-	const newPlayerWsClient = new WebsocketClient(
-		`${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_NEW_PLAYER_NAMESPACE}`,
-		cookieToken || "",
-	);
+	const [cookieToken, setCookieToken] = useState<string | null>(null);
 
-	const validatedWsClient = new WebsocketClient(
-		`${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_VALIDATED_NAMESPACE}`,
-		cookieToken || "",
+	const validatedWsClient = useRef<WebsocketClient>(
+		new WebsocketClient(
+			`${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_VALIDATED_NAMESPACE}`,
+			getCookie("token") as string || "",
+		),
 	);
 
-	newPlayerWsClient.socket.on("connect", () => {
-		logger.log("Connected to server");
+
+	validatedWsClient?.current?.socket.on("connect", () => {
+		logger.log("Validated connected");
 	});
-	newPlayerWsClient.socket.on("connect_error ", (err: unknown) => {
-		logger.log("Connection error", err);
-		logger.log("Connection error");
+	validatedWsClient?.current?.socket.on("disconnect", () => {
+		logger.log("Validated disconnected");
 	});
-	newPlayerWsClient.socket.on("disconnect", () => {
-		logger.log("Disconnected from server");
+	validatedWsClient?.current?.socket.on("connect_error", (err: Error) => {
+		logger.log("Validated connection error", err);
 	});
 
-	newPlayerWsClient.socket.on("new_player", (data: { uuid: string }) => {
-		setCookie("token", data.uuid, {
-			sameSite: "strict",
-			secure: true,
-			maxAge: 60 * 60 * 24, // 24 hours
-		});
-		// set new token
-		validatedWsClient.socket.auth = {
-			token: data.uuid,
-		}
-		newPlayerWsClient.socket.disconnect();
-	});
-
-
-	validatedWsClient.socket.on(
-		"entered_game",
-		(data: { roomCode: string, toastMessage: string }) => {
-			logger.log("Entered game", data);
-			toast(data.toastMessage);
-			// route to /room/{roomCode}
-			router.push(`/room/${data.roomCode}`);
+	validatedWsClient?.current?.socket.on(
+		"register_new_player_token",
+		(data: { token: string }) => {
+			logger.log("Register new player token", data.token);
+			setCookie("token", data.token, {
+				sameSite: "strict",
+				secure: true,
+				maxAge: 60 * 60 * 24, // 1 day
+			});
+			validatedWsClient?.current?.socket.emit("token_test");
 		},
 	);
 
-	toast("test");
+	validatedWsClient?.current?.socket.on(
+		"entered_game",
+		(data: { roomCode: string; toastMessage: string }) => {
+			logger.log("Entered game", data.roomCode);
+			toast(data.toastMessage);
+			router.push(`/room/${data.roomCode}`);
+		},
+	);
 
 	return (
 		<>
@@ -74,7 +68,9 @@ export default function Index() {
 					<Popup
 						buttonTitle="Create Game"
 						triggerButtonClick={() => {
-							validatedWsClient.socket.emit("check_if_already_created_game_before");
+							validatedWsClient?.current?.socket.emit(
+								"check_if_already_created_game_before",
+							);
 						}}
 						dialogTitle="Create Game"
 						dialogDescription="What be your name veary traveller?"
@@ -96,7 +92,7 @@ export default function Index() {
 							logger.log("Create game clicked");
 							const name = (document.getElementById("name") as HTMLInputElement)
 								.value;
-								logger.log("Name", name);
+							logger.log("Name", name);
 							if (!name) {
 								return;
 							}
@@ -109,7 +105,7 @@ export default function Index() {
 
 							logger.log("creating game...", name);
 
-							validatedWsClient.socket.emit("create_game", {
+							validatedWsClient?.current?.socket.emit("create_game", {
 								name: name,
 							});
 						}}
@@ -185,7 +181,7 @@ export default function Index() {
 								return;
 							}
 
-							validatedWsClient.socket.emit("join_game", {
+							validatedWsClient?.current?.socket.emit("join_game", {
 								name: name,
 								code: code,
 							});
