@@ -3,7 +3,7 @@ import Popup from "@/components/Popup/Popup";
 import { Logger } from "@/utils/log-utils";
 import { getCookie } from "cookies-next";
 import { useRouter } from "next/router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export default function Page() {
@@ -15,6 +15,17 @@ export default function Page() {
   const roomCode = router.query?.code;
   const logger = new Logger(`client/room/${roomCode}`);
 
+  const validatedWsClient = useRef<WebsocketClient>(
+    new WebsocketClient(
+      `${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_VALIDATED_NAMESPACE}`,
+      (getCookie("token") as string) || "",
+    ),
+  );
+
+  // TODO: when refreshing the page, the socket is not connected?
+
+
+
   if (!roomCode) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -23,21 +34,8 @@ export default function Page() {
     );
   }
 
-  const validatedWsClient = useRef<WebsocketClient>(
-    new WebsocketClient(
-      `${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_VALIDATED_NAMESPACE}`,
-      (getCookie("token") as string) || "",
-    ),
-  );
-
   validatedWsClient?.current?.socket.on("connect", () => {
     logger.log("Validated socket connected");
-    /**
-     * You do not direct join
-     * - you are host --> game cannot start, you must join
-     * - you are not host --> you can join (if you are apart of the game already, join), if you are not apart of it, check if game state is alright, then join
-     * If you direct join, must type in name, create player, and then do the same check. The host will not be needed to be checked, but anyway
-     */
     validatedWsClient?.current?.socket.emit("check_if_allowed_in_game", {
       code: roomCode,
     });
@@ -75,13 +73,24 @@ export default function Page() {
       // Is only defined if allowed
       setIsHost(data.isHost || false);
 
-      // check for both states (exccept not allowed) if player is host
-      validatedWsClient?.current?.socket.emit("check_if_player_is_host", {
-        code: roomCode,
-      });
       logger.log("check_if_allowed_in_game_response", data);
     },
   );
+
+  validatedWsClient?.current?.socket.on(
+			"direct_join_game_response",
+			(data: {
+				roomCode: string;
+				toastMessage: string;
+			}) => {
+				logger.log("Direct join game response", data);
+				toast(data.toastMessage);
+				if (data.roomCode) {
+					setHasJoinedRoom(true);
+				}
+			},
+		);
+
 
   validatedWsClient?.current?.socket.on(
     "player_joined_game_broadcast_all",
@@ -93,7 +102,7 @@ export default function Page() {
 
   return (
     <>
-      {isAllowedInRoom ? (
+      {isAllowedInRoom && hasJoinedRoom ? (
         <div className="flex flex-col items-center justify-center min-h-screen">
           <h1 className="text-4xl font-bold">Odd Duck</h1>
           <p className="text-2xl font-bold">Room Code: {roomCode}</p>

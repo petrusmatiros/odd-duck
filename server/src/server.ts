@@ -76,103 +76,6 @@ logger.log("gamePacksRegistry", gamePacksRegistry);
 const validatedNamespaceConstant = process.env.WS_VALIDATED_NAMESPACE;
 const validatedNamespace = io.of(`/${validatedNamespaceConstant}`);
 
-// TODO: fix this
-function joinGameHelper(
-	socket: Socket,
-	data: { name: string; roomId: string },
-) {
-	const token = socket.handshake.auth.token;
-
-	logger.log({
-		socketId: socket.id,
-		token: token,
-		event: "join_game_helper",
-		namespace: validatedNamespaceConstant,
-		message: "join game helper",
-		data: data,
-	});
-
-	// Check if player already exists
-	const player = playersRegistry.get(token);
-	if (!player) {
-		logger.log({
-			socketId: socket.id,
-			token: token,
-			event: "join_game_helper",
-			namespace: validatedNamespaceConstant,
-			message: "No player instance found for token",
-		});
-		return;
-	}
-
-	// Set player name
-	player.setName(data.name);
-
-	logger.log({
-		socketId: socket.id,
-		token: token,
-		event: "join_game_helper",
-		namespace: validatedNamespaceConstant,
-		message: "player name set",
-		data: player,
-	});
-
-	// Check if room already exists
-	const room = roomsRegistry.get(data.roomId);
-	if (!room) {
-		logger.log({
-			socketId: socket.id,
-			token: token,
-			event: "join_game_helper",
-			namespace: validatedNamespaceConstant,
-			message: "No room instance found for code",
-		});
-		return;
-	}
-
-	// Check if player is already in the room
-	if (room.getPlayers().includes(player.getId())) {
-		logger.log({
-			socketId: socket.id,
-			token: token,
-			event: "join_game_helper",
-			namespace: validatedNamespaceConstant,
-			message: "Player already in room",
-		});
-
-		socket.emit("entered_game_response", {
-			roomCode: room.getId(),
-		});
-		return;
-	}
-	// Check if game is already in progress
-	if (room.getGameState() === "in_game") {
-		logger.log({
-			socketId: socket.id,
-			token: token,
-			event: "join_game_helper",
-			namespace: validatedNamespaceConstant,
-			message: "Game is already in progress",
-		});
-		return;
-	}
-
-	// Add player to players array
-	room.addPlayer(player.getId());
-
-	// Let socket join the room
-	socket.join(room.id);
-
-	// Emit to the player that they have joined the game
-	socket.emit("direct_join_game_response");
-
-	// Send to all players in the room (except the sender)
-	socket.broadcast.to(room.getId()).emit("player_joined", {
-		playerId: player.getId(),
-		playerName: data.name,
-	});
-}
-
 function onConnectionHelper(socket: Socket) {
 	logger.log({
 		socketId: socket.id,
@@ -227,6 +130,7 @@ function onConnectionHelper(socket: Socket) {
 			token: token,
 		},
 	});
+	return;
 }
 
 /**
@@ -408,6 +312,19 @@ validatedNamespace.on("connection", (socket) => {
 			data: data,
 		});
 
+		// Check if room already exists
+		const room = roomsRegistry.get(data.code);
+		if (!room) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "join_game",
+				namespace: validatedNamespaceConstant,
+				message: "No room instance found for code",
+			});
+			return;
+		}
+
 		// Check if player already exists
 		const player = playersRegistry.get(token);
 		if (!player) {
@@ -424,18 +341,6 @@ validatedNamespace.on("connection", (socket) => {
 		// Set player name
 		player.setName(data.name);
 
-		// Check if room already exists
-		const room = roomsRegistry.get(data.code);
-		if (!room) {
-			logger.log({
-				socketId: socket.id,
-				token: token,
-				event: "join_game",
-				namespace: validatedNamespaceConstant,
-				message: "No room instance found for code",
-			});
-			return;
-		}
 
 		// Check if player is already in the room
 		if (room.getPlayers().includes(player.getId())) {
@@ -450,7 +355,7 @@ validatedNamespace.on("connection", (socket) => {
 			});
 
 			socket.emit("entered_game_response", {
-				roomCode: room.id,
+				roomCode: room.getId(),
 			});
 			return;
 		}
@@ -471,11 +376,11 @@ validatedNamespace.on("connection", (socket) => {
 		room.addPlayer(player.getId());
 
 		// Let socket join the room
-		socket.join(room.id);
+		socket.join(room.getId());
 
 		// Emit to the player that they have joined the game
 		socket.emit("entered_game_response", {
-			roomCode: room.id,
+			roomCode: room.getId(),
 		});
 
 		// Send to all players in the room
@@ -483,6 +388,79 @@ validatedNamespace.on("connection", (socket) => {
 			playerId: player.getId(),
 			playerName: data.name,
 		});
+	});
+
+	/**
+	 * direct_join_game
+	 * This event is fired when the client emits a direct_join_game event.
+	 */
+	socket.on("direct_join_game", (data: { name: string, code: string }) => {
+		const token = socket.handshake.auth.token;
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			event: "direct_join_game",
+			namespace: validatedNamespaceConstant,
+			message: "direct join game",
+			data: data,
+		});
+		// Check if room already exists
+		const room = roomsRegistry.get(data.code);
+		if (!room) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "direct_join_game",
+				namespace: validatedNamespaceConstant,
+				message: "No room instance found for code",
+			});
+			return;
+		}
+
+		// Check if player already exists
+		const player = playersRegistry.get(token);
+		if (!player) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "direct_join_game",
+				namespace: validatedNamespaceConstant,
+				message: "No player instance found for token",
+			});
+		
+			const newPlayer = new PlayerInstance(token);
+			playersRegistry.set(token, newPlayer);
+
+			newPlayer.setName(data.name);
+
+			// Add player to players array
+			room.addPlayer(newPlayer.getId());
+
+			// Let socket join the room
+			socket.join(room.getId());
+
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "direct_join_game",
+				namespace: validatedNamespaceConstant,
+				message: "new player created",
+				data: newPlayer,
+			});
+
+			socket.emit("direct_join_game_response", {
+				roomCode: room.getId(),
+				toastMessage: `You have joined the game as ${data.name}`,
+			});
+
+			// Send to all players in the room
+			io.to(room.getId()).emit("player_joined_game_broadcast_all", {
+				playerId: newPlayer.getId(),
+				playerName: data.name,
+			});
+
+			return;
+		}
 	});
 
 	/**
