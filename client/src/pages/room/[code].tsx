@@ -3,16 +3,15 @@ import Popup from "@/components/Popup/Popup";
 import { Logger } from "@/utils/log-utils";
 import { getCookie } from "cookies-next";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 export default function Page() {
   const [isAllowedInRoom, setIsAllowedInRoom] = useState(false);
   const router = useRouter();
 
-  const logger = new Logger("client/room/code");
-
   const roomCode = router.query?.code;
+  const logger = new Logger(`client/room/${roomCode}`);
 
   if (!roomCode) {
     return (
@@ -22,26 +21,49 @@ export default function Page() {
     );
   }
 
-  const validatedWsClient = new WebsocketClient(
-    `${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_VALIDATED_NAMESPACE}`,
-    (getCookie("token") as string) || "",
+  const validatedWsClient = useRef<WebsocketClient>(
+    new WebsocketClient(
+      `${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_VALIDATED_NAMESPACE}`,
+      getCookie("token") as string || "",
+    ),
   );
 
-  validatedWsClient.socket.on(
+  validatedWsClient?.current?.socket.on("connect", () => {
+    logger.log("Validated socket connected");
+    validatedWsClient?.current?.socket.emit("check_if_allowed_in_game", {
+      code: roomCode,
+    });
+  });
+  validatedWsClient?.current?.socket.on("disconnect", () => {
+    logger.log("Validated socket disconnected");
+  });
+  validatedWsClient?.current?.socket.on("connect_error", (err: Error) => {
+    logger.log("Validated socket connection error", err);
+  });
+
+  validatedWsClient?.current?.socket.on(
     "check_if_allowed_in_game_response",
     (data: { allowed: boolean; toastMessage: string }) => {
       if (!data.allowed) {
         logger.log("Not allowed in game", data);
-        toast(data.toastMessage);
         router.push("/");
       }
+      toast(data.toastMessage);
       setIsAllowedInRoom(data.allowed);
       logger.log("check_if_allowed_in_game_response", data);
     },
   );
 
+  validatedWsClient?.current?.socket.on(
+    "player_joined_game_broadcast_all",
+    (data: { playerId: string; playerName: string }) => {
+      logger.log("Player joined game", data);
+      toast(`${data.playerName} has joined the game!`);
+    }
+  );
+
   // TODO: fix this:
-  validatedWsClient.socket.on("direct_join_game_response", () => {});
+  validatedWsClient?.current?.socket.on("direct_join_game_response", () => { });
 
   /**
    * TODO:
@@ -110,7 +132,7 @@ export default function Page() {
             }
 
             // TODO: should this be different since this is already within lobby
-            validatedWsClient.socket.emit("direct_join_game", {
+            validatedWsClient?.current?.socket.emit("direct_join_game", {
               name: name,
               code: roomCode,
             });

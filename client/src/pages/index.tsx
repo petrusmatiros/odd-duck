@@ -4,15 +4,12 @@ import { Logger } from "@/utils/log-utils";
 import { getCookie, setCookie } from "cookies-next";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { use, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-
-type CustomError = Error & { data: { uuid: string } };
 
 export default function Index() {
 	const logger = new Logger("client/index");
 	const router = useRouter();
-	const [cookieToken, setCookieToken] = useState<string | null>(null);
 
 	const validatedWsClient = useRef<WebsocketClient>(
 		new WebsocketClient(
@@ -21,15 +18,14 @@ export default function Index() {
 		),
 	);
 
-
 	validatedWsClient?.current?.socket.on("connect", () => {
-		logger.log("Validated connected");
+		logger.log("Validated socket connected");
 	});
 	validatedWsClient?.current?.socket.on("disconnect", () => {
-		logger.log("Validated disconnected");
+		logger.log("Validated socket disconnected");
 	});
 	validatedWsClient?.current?.socket.on("connect_error", (err: Error) => {
-		logger.log("Validated connection error", err);
+		logger.log("Validated socket connection error", err);
 	});
 
 	validatedWsClient?.current?.socket.on(
@@ -41,7 +37,6 @@ export default function Index() {
 				secure: true,
 				maxAge: 60 * 60 * 24, // 1 day
 			});
-			validatedWsClient?.current?.socket.emit("token_test");
 		},
 	);
 
@@ -68,6 +63,7 @@ export default function Index() {
 					<Popup
 						buttonTitle="Create Game"
 						triggerButtonClick={() => {
+							logger.log("Create game clicked");
 							validatedWsClient?.current?.socket.emit(
 								"check_if_already_created_game_before",
 							);
