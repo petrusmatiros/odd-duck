@@ -8,6 +8,8 @@ import { toast } from "sonner";
 
 export default function Page() {
   const [isAllowedInRoom, setIsAllowedInRoom] = useState(false);
+  const [hasJoinedRoom, setHasJoinedRoom] = useState(false);
+  const [isHost, setIsHost] = useState(false);
   const router = useRouter();
 
   const roomCode = router.query?.code;
@@ -24,12 +26,18 @@ export default function Page() {
   const validatedWsClient = useRef<WebsocketClient>(
     new WebsocketClient(
       `${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_VALIDATED_NAMESPACE}`,
-      getCookie("token") as string || "",
+      (getCookie("token") as string) || "",
     ),
   );
 
   validatedWsClient?.current?.socket.on("connect", () => {
     logger.log("Validated socket connected");
+    /**
+     * You do not direct join
+     * - you are host --> game cannot start, you must join
+     * - you are not host --> you can join (if you are apart of the game already, join), if you are not apart of it, check if game state is alright, then join
+     * If you direct join, must type in name, create player, and then do the same check. The host will not be needed to be checked, but anyway
+     */
     validatedWsClient?.current?.socket.emit("check_if_allowed_in_game", {
       code: roomCode,
     });
@@ -43,13 +51,34 @@ export default function Page() {
 
   validatedWsClient?.current?.socket.on(
     "check_if_allowed_in_game_response",
-    (data: { allowed: boolean; toastMessage: string }) => {
-      if (!data.allowed) {
+    (data: {
+      allowedState: "not_allowed" | "allow_join" | "allow_register";
+      isHost?: boolean;
+      toastMessage: string;
+    }) => {
+      toast(data.toastMessage);
+      if (data.allowedState === "not_allowed") {
         logger.log("Not allowed in game", data);
         router.push("/");
+        return;
       }
-      toast(data.toastMessage);
-      setIsAllowedInRoom(data.allowed);
+
+      if (data.allowedState === "allow_register") {
+        setIsAllowedInRoom(true);
+      }
+
+      if (data.allowedState === "allow_join") {
+        setIsAllowedInRoom(true);
+        setHasJoinedRoom(true);
+      }
+
+      // Is only defined if allowed
+      setIsHost(data.isHost || false);
+
+      // check for both states (exccept not allowed) if player is host
+      validatedWsClient?.current?.socket.emit("check_if_player_is_host", {
+        code: roomCode,
+      });
       logger.log("check_if_allowed_in_game_response", data);
     },
   );
@@ -59,17 +88,8 @@ export default function Page() {
     (data: { playerId: string; playerName: string }) => {
       logger.log("Player joined game", data);
       toast(`${data.playerName} has joined the game!`);
-    }
+    },
   );
-
-  // TODO: fix this:
-  validatedWsClient?.current?.socket.on("direct_join_game_response", () => { });
-
-  /**
-   * TODO:
-   * 1. emit, check_if_allowed_in_game, either show the lobby or not (checks if player is in the game)
-   * 3. emit, check_if_host_of_game, either show host state ui or not
-   */
 
   return (
     <>

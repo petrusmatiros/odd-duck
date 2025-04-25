@@ -29,7 +29,7 @@ export default function Index() {
 	});
 
 	validatedWsClient?.current?.socket.on(
-		"register_new_player_token",
+		"register_new_player_token_response",
 		(data: { token: string }) => {
 			logger.log("Register new player token", data.token);
 			setCookie("token", data.token, {
@@ -41,7 +41,7 @@ export default function Index() {
 	);
 
 	validatedWsClient?.current?.socket.on(
-		"entered_game",
+		"entered_game_response",
 		(data: { roomCode: string; toastMessage: string }) => {
 			logger.log("Entered game", data.roomCode);
 			toast(data.toastMessage);

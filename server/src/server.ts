@@ -140,7 +140,7 @@ function joinGameHelper(
 			message: "Player already in room",
 		});
 
-		socket.emit("entered_game", {
+		socket.emit("entered_game_response", {
 			roomCode: room.getId(),
 		});
 		return;
@@ -209,7 +209,7 @@ function onConnectionHelper(socket: Socket) {
 		playersRegistry.set(newUUID, newPlayer);
 		// !IMPORTANT, we must assign, so each successive events can use the same token
 		socket.handshake.auth.token = newUUID;
-		socket.emit("register_new_player_token", {
+		socket.emit("register_new_player_token_response", {
 			token: newUUID,
 			toastMessage: "New player token created",
 		});
@@ -296,7 +296,7 @@ validatedNamespace.on("connection", (socket) => {
 				// Let socket join the room
 				socket.join(room.getId());
 
-				socket.emit("entered_game", {
+				socket.emit("entered_game_response", {
 					roomCode: room.getId(),
 					toastMessage: "You are already a host of a room",
 				});
@@ -357,7 +357,7 @@ validatedNamespace.on("connection", (socket) => {
 				socket.join(room.getId());
 
 				// TODO: make host join their own already created room
-				socket.emit("entered_game", {
+				socket.emit("entered_game_response", {
 					roomCode: room.getId(),
 					toastMessage: "You are already a host of a room",
 				});
@@ -387,7 +387,7 @@ validatedNamespace.on("connection", (socket) => {
 			data: newRoom,
 		});
 
-		socket.emit("entered_game", {
+		socket.emit("entered_game_response", {
 			roomCode: newRoom.getId(),
 			toastMessage: "You have created a new game",
 		});
@@ -449,7 +449,7 @@ validatedNamespace.on("connection", (socket) => {
 				message: "Player already in room",
 			});
 
-			socket.emit("entered_game", {
+			socket.emit("entered_game_response", {
 				roomCode: room.id,
 			});
 			return;
@@ -474,7 +474,7 @@ validatedNamespace.on("connection", (socket) => {
 		socket.join(room.id);
 
 		// Emit to the player that they have joined the game
-		socket.emit("entered_game", {
+		socket.emit("entered_game_response", {
 			roomCode: room.id,
 		});
 
@@ -499,18 +499,6 @@ validatedNamespace.on("connection", (socket) => {
 			message: "check if allowed in game",
 			data: data,
 		});
-		// Check if player already exists
-		const player = playersRegistry.get(token);
-		if (!player) {
-			logger.log({
-				socketId: socket.id,
-				token: token,
-				event: "check_if_allowed_in_game",
-				namespace: validatedNamespaceConstant,
-				message: "No player instance found for token",
-			});
-			return;
-		}
 		// Check if room already exists
 		const room = roomsRegistry.get(data.code);
 		if (!room) {
@@ -520,6 +508,28 @@ validatedNamespace.on("connection", (socket) => {
 				event: "check_if_allowed_in_game",
 				namespace: validatedNamespaceConstant,
 				message: "No room instance found for code",
+			});
+			socket.emit("check_if_allowed_in_game_response", {
+				allowedState: "not_allowed",
+				toastMessage: `The room ${data.code} does not exist`,
+			});
+			return;
+		}
+		// Check if player already exists
+		const player = playersRegistry.get(token);
+		if (!player) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "check_if_allowed_in_game",
+				namespace: validatedNamespaceConstant,
+				message:
+					"Socket is attempting direct join, since player is not in registry",
+			});
+			socket.emit("check_if_allowed_in_game_response", {
+				allowedState: "allow_register",
+				toastMessage:
+					"You are allowed to join the game, but you need a name first",
 			});
 			return;
 		}
@@ -533,8 +543,9 @@ validatedNamespace.on("connection", (socket) => {
 				message: "Player is host of room",
 			});
 			socket.emit("check_if_allowed_in_game_response", {
-				allowed: true,
-				toastMessage: "You are the host of this game",
+				allowedState: "allow_join",
+				isHost: true,
+				toastMessage: "You can join - welcome back, host!",
 			});
 			io.to(room.getId()).emit("player_joined_game_broadcast_all", {
 				playerId: player.getId(),
@@ -542,7 +553,7 @@ validatedNamespace.on("connection", (socket) => {
 			});
 			return;
 		}
-		// Check if player is already in the room
+		// Check if player is not in the room
 		if (!room.getPlayers().includes(player.getId())) {
 			logger.log({
 				socketId: socket.id,
@@ -551,29 +562,40 @@ validatedNamespace.on("connection", (socket) => {
 				namespace: validatedNamespaceConstant,
 				message: "Player not in room",
 			});
-			socket.emit("check_if_allowed_in_game_response", {
-				allowed: false,
-				toastMessage: "You are not allowed in this game",
-			});
-			return;
-		}
-		// Check if game is already in progress
-		if (room.getGameState() === "in_game") {
+
+			// Check if game is already in progress
+			if (room.getGameState() === "in_game") {
+				logger.log({
+					socketId: socket.id,
+					token: token,
+					event: "check_if_allowed_in_game",
+					namespace: validatedNamespaceConstant,
+					message: "Game is already in progress",
+				});
+				socket.emit("check_if_allowed_in_game_response", {
+					allowedState: "not_allowed",
+					toastMessage: "Game is already in progress",
+				});
+				return;
+			}
+
 			logger.log({
 				socketId: socket.id,
 				token: token,
 				event: "check_if_allowed_in_game",
 				namespace: validatedNamespaceConstant,
-				message: "Game is already in progress",
+				message: "Allowed to join game",
 			});
+
+			// If it is not in progress, then the player can join the game
 			socket.emit("check_if_allowed_in_game_response", {
-				allowed: false,
-				toastMessage: "Game is already in progress",
+				allowedState: "allow_join",
+				toastMessage: `Joined room ${data.code}`,
 			});
 			return;
 		}
 	});
-
+		
 	/**
 	 * disconnecting
 	 * Here the rooms for a socket are still present.
