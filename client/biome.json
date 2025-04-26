@@ -7,7 +7,18 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"ignore": ["node_modules", "dist", "build", "coverage", ".git", ".vscode"]
+		"ignore": [
+			"node_modules",
+			"dist",
+			"build",
+			"coverage",
+			"*.log",
+			"*.lock",
+			".DS_Store",
+			".idea",
+			".vscode",
+			".history"
+		]
 	},
 	"formatter": {
 		"enabled": true,
