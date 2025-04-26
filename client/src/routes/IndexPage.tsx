@@ -1,20 +1,19 @@
-import { WebsocketClient } from "@/communication/WebsocketClient";
-import Popup from "@/components/Popup/Popup";
-import { Logger } from "@/utils/log-utils";
-import { getCookie, setCookie } from "cookies-next";
-import Image from "next/image";
-import { useRouter } from "next/router";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { toast } from "sonner";
+import { WebsocketClient } from "../communication/WebsocketClient";
+import Popup from "../components/Popup/Popup";
+import { getCookie, setCookie } from "../utils/cookie-utils";
+import { Logger } from "../utils/log-utils";
 
 export default function Index() {
 	const logger = new Logger("client/index");
-	const router = useRouter();
+
+	console.log(import.meta.env.KEY);
 
 	const validatedWsClient = useRef<WebsocketClient>(
 		new WebsocketClient(
-			`${process.env.NEXT_PUBLIC_WS_SERVER_URL}/${process.env.NEXT_PUBLIC_WS_VALIDATED_NAMESPACE}`,
-			getCookie("token") as string || "",
+			`${import.meta.env.VITE_WS_SERVER_URL}/${import.meta.env.VITE_WS_VALIDATED_NAMESPACE}`,
+			(getCookie("token") as string) || "",
 		),
 	);
 
@@ -33,7 +32,7 @@ export default function Index() {
 		(data: { token: string }) => {
 			logger.log("Register new player token", data.token);
 			setCookie("token", data.token, {
-				sameSite: "strict",
+				sameSite: "Strict",
 				secure: true,
 				maxAge: 60 * 60 * 24, // 1 day
 			});
@@ -45,7 +44,7 @@ export default function Index() {
 		(data: { roomCode: string; toastMessage: string }) => {
 			logger.log("Entered game", data.roomCode);
 			toast(data.toastMessage);
-			router.push(`/room/${data.roomCode}`);
+			window.location.href = `/room/${data.roomCode}`;
 		},
 	);
 
@@ -53,7 +52,7 @@ export default function Index() {
 		<>
 			<div className="flex flex-col items-center justify-center min-h-screen">
 				<h1 className="text-4xl font-bold">Odd Duck</h1>
-				<Image
+				<img
 					src="/avatars/odd_duck.webp"
 					alt="Odd Duck"
 					width={200}

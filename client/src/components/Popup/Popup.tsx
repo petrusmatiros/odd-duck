@@ -52,20 +52,22 @@ export default function Popup({
 }: Props) {
 	return (
 		<Dialog open={open}>
-			{!withoutTriggerButton && <DialogTrigger asChild>
-				{buttonTitle && (
-					<Button
-						variant="outline"
-						style={{
-							paddingInline: "1rem",
-							width: "10rem",
-						}}
-						onClick={triggerButtonClick}
-					>
-						{buttonTitle}
-					</Button>
-				)}
-			</DialogTrigger>}
+			{!withoutTriggerButton && (
+				<DialogTrigger asChild>
+					{buttonTitle && (
+						<Button
+							variant="outline"
+							style={{
+								paddingInline: "1rem",
+								width: "10rem",
+							}}
+							onClick={triggerButtonClick}
+						>
+							{buttonTitle}
+						</Button>
+					)}
+				</DialogTrigger>
+			)}
 			<DialogContent
 				className="sm:max-w-[425px]"
 				style={{

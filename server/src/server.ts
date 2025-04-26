@@ -19,7 +19,7 @@ config();
 const logger = new Logger("Server");
 
 const PORT = process.env.WS_SERVER_PORT || 8080;
-const API_URL = process.env.WS_SERVER_URL || "http://localhost:8080";
+const API_URL = process.env.WS_SERVER_URL || `http://localhost:${PORT}`;
 
 const app = express();
 const server = createServer(app);
@@ -41,7 +41,7 @@ app.use(express.json());
 app.use(cors());
 
 // Middleware to serve static files
-const staticFileDirectoryPath = "../../client/out";
+const staticFileDirectoryPath = "../../client/dist";
 const pathToStaticFiles = path.join(__dirname, staticFileDirectoryPath);
 
 app.use(express.static(pathToStaticFiles));
@@ -63,7 +63,7 @@ app.get("/", (_req, res) => {
 });
 
 server.listen(PORT, () => {
-	logger.log(`Server is running on port ${PORT}`);
+	logger.log(`Server is running on port ${process.env.WS_SERVER_URL}`);
 });
 
 const roomsRegistry = new Map<string, RoomInstance>();

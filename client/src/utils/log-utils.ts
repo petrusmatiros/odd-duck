@@ -4,7 +4,10 @@ export class Logger {
 		this.prefix = prefix;
 	}
 
-	private consoleLogger = (type: "log" | "error" | "warn" | "info" | "debug" | "trace", ...args: unknown[]) => {
+	private consoleLogger = (
+		type: "log" | "error" | "warn" | "info" | "debug" | "trace",
+		...args: unknown[]
+	) => {
 		const message = this.formatMessage(...args);
 		console[type](message.prefix, ...args);
 	};
