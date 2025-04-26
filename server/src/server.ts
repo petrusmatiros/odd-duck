@@ -62,6 +62,20 @@ app.get("/", (_req, res) => {
 	});
 });
 
+app.get("/room/:code", (_req, res) => {
+	logger.log(`Serving ${indexFileName}`);
+
+	logger.log(path.join(pathToStaticFiles, indexFileName));
+	res.sendFile(path.join(pathToStaticFiles, indexFileName), (err) => {
+		if (err) {
+			logger.error(`Error sending ${indexFileName}:`, err);
+			res.status(err.status).end();
+		} else {
+			logger.log(`${indexFileName} sent successfully`);
+		}
+	});
+});
+
 server.listen(PORT, () => {
 	logger.log(`Server is running on port ${process.env.WS_SERVER_URL}`);
 });
