@@ -27,23 +27,25 @@ export default function Page() {
 			return;
 		}
 
-		console.log("Validated socket", validatedWsClient.current.socket);
+		const sockRef = validatedWsClient?.current.socket;
+
+		console.log("Validated socket", sockRef);
 
 		console.log("Room code", roomCode);
-		validatedWsClient?.current?.socket.on("connect", () => {
+		sockRef.on("connect", () => {
 			logger.log("Validated socket connected");
-			validatedWsClient?.current?.socket.emit("check_if_allowed_in_game", {
+			sockRef.emit("check_if_allowed_in_game", {
 				code: roomCode,
 			});
 		});
-		validatedWsClient?.current?.socket.on("disconnect", () => {
+		sockRef.on("disconnect", () => {
 			logger.log("Validated socket disconnected");
 		});
-		validatedWsClient?.current?.socket.on("connect_error", (err: Error) => {
+		sockRef.on("connect_error", (err: Error) => {
 			logger.log("Validated socket connection error", err);
 		});
 
-		validatedWsClient?.current?.socket.on(
+		sockRef.on(
 			"check_if_allowed_in_game_response",
 			(data: {
 				allowedState: "not_allowed" | "allow_join" | "allow_register";
@@ -73,7 +75,7 @@ export default function Page() {
 			},
 		);
 
-		validatedWsClient?.current?.socket.on(
+		sockRef.on(
 			"direct_join_game_response",
 			(data: {
 				roomCode: string;
@@ -87,7 +89,7 @@ export default function Page() {
 			},
 		);
 
-		validatedWsClient?.current?.socket.on(
+		sockRef.on(
 			"player_joined_game_broadcast_all",
 			(data: { playerId: string; playerName: string }) => {
 				logger.log("Player joined game", data);
@@ -97,16 +99,17 @@ export default function Page() {
 
 		return () => {
 			logger.log("Cleaning up");
-			validatedWsClient?.current?.socket.off("connect");
-			validatedWsClient?.current?.socket.off("disconnect");
-			validatedWsClient?.current?.socket.off("connect_error");
-			validatedWsClient?.current?.socket.off(
+			sockRef.off("connect");
+			sockRef.off("disconnect");
+			sockRef.off("connect_error");
+			sockRef.off(
 				"check_if_allowed_in_game_response",
 			);
-			validatedWsClient?.current?.socket.off(
+			sockRef.off(
 				"player_joined_game_broadcast_all",
 			);
 		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [roomCode]);
 
 	if (!roomCode) {

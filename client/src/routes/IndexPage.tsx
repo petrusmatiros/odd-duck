@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { WebsocketClient } from "../communication/WebsocketClient";
 import Popup from "../components/Popup/Popup";
@@ -8,8 +8,6 @@ import { Logger } from "../utils/log-utils";
 export default function Index() {
 	const logger = new Logger("client/index");
 
-	console.log(import.meta.env.KEY);
-
 	const validatedWsClient = useRef<WebsocketClient>(
 		new WebsocketClient(
 			`${import.meta.env.VITE_WS_SERVER_URL}/${import.meta.env.VITE_WS_VALIDATED_NAMESPACE}`,
@@ -17,36 +15,57 @@ export default function Index() {
 		),
 	);
 
-	validatedWsClient?.current?.socket.on("connect", () => {
-		logger.log("Validated socket connected");
-	});
-	validatedWsClient?.current?.socket.on("disconnect", () => {
-		logger.log("Validated socket disconnected");
-	});
-	validatedWsClient?.current?.socket.on("connect_error", (err: Error) => {
-		logger.log("Validated socket connection error", err);
-	});
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	useEffect(() => {
+		if (!validatedWsClient?.current) {
+			return;
+		}
+		const sockRef = validatedWsClient?.current.socket;
 
-	validatedWsClient?.current?.socket.on(
-		"register_new_player_token_response",
-		(data: { token: string }) => {
-			logger.log("Register new player token", data.token);
-			setCookie("token", data.token, {
-				sameSite: "Strict",
-				secure: true,
-				maxAge: 60 * 60 * 24, // 1 day
-			});
-		},
-	);
+		sockRef.on("connect", () => {
+			logger.log("Validated socket connected");
+		});
+		sockRef.on("disconnect", () => {
+			logger.log("Validated socket disconnected");
+		});
+		sockRef.on("connect_error", (err: Error) => {
+			logger.log("Validated socket connection error", err);
+		});
 
-	validatedWsClient?.current?.socket.on(
-		"entered_game_response",
-		(data: { roomCode: string; toastMessage: string }) => {
-			logger.log("Entered game", data.roomCode);
-			toast(data.toastMessage);
-			window.location.href = `/room/${data.roomCode}`;
-		},
-	);
+		sockRef.on(
+			"register_new_player_token_response",
+			(data: { token: string }) => {
+				logger.log("Register new player token", data.token);
+				setCookie("token", data.token, {
+					sameSite: "Strict",
+					secure: true,
+					maxAge: 60 * 60 * 24, // 1 day
+				});
+			},
+		);
+
+		sockRef.on(
+			"entered_game_response",
+			(data: { roomCode: string; toastMessage: string }) => {
+				logger.log("Entered game", data.roomCode);
+				toast(data.toastMessage);
+				window.location.href = `/room/${data.roomCode}`;
+			},
+		);
+
+		return () => {
+			logger.log("Cleaning up socket listeners");
+			sockRef.off("connect");
+			sockRef.off("disconnect");
+			sockRef.off("connect_error");
+			sockRef.off(
+				"register_new_player_token_response",
+			);
+			sockRef.off(
+				"entered_game_response",
+			);
+		};
+	}, []);
 
 	return (
 		<>
