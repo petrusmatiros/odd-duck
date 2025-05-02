@@ -8,6 +8,7 @@ import { Logger } from "../utils/log-utils";
 export default function Page() {
 	const [isAllowedInRoom, setIsAllowedInRoom] = useState(false);
 	const [hasJoinedRoom, setHasJoinedRoom] = useState(false);
+	const [playersInLobby, setPlayersInLobby] = useState<{playerId: string, playerName: string}[]>([]);
 	const [, setIsHost] = useState(false);
 
 	const roomCode = window.location.pathname.split("/").pop();
@@ -50,12 +51,13 @@ export default function Page() {
 			(data: {
 				allowedState: "not_allowed" | "allow_join" | "allow_register";
 				isHost?: boolean;
+				playersInLobby?: { playerId: string; playerName: string }[];
 				toastMessage: string;
 			}) => {
 				toast(data.toastMessage);
 				if (data.allowedState === "not_allowed") {
 					logger.log("Not allowed in game", data);
-					// router.push("/");
+					window.location.href = "/";
 					return;
 				}
 
@@ -65,6 +67,7 @@ export default function Page() {
 
 				if (data.allowedState === "allow_join") {
 					setIsAllowedInRoom(true);
+					setPlayersInLobby(data.playersInLobby || []);
 					setHasJoinedRoom(true);
 				}
 
@@ -79,11 +82,13 @@ export default function Page() {
 			"direct_join_game_response",
 			(data: {
 				roomCode: string;
+				playersInLobby?: { playerId: string; playerName: string }[];
 				toastMessage: string;
 			}) => {
 				logger.log("Direct join game response", data);
 				toast(data.toastMessage);
 				if (data.roomCode) {
+					setPlayersInLobby(data.playersInLobby || []);
 					setHasJoinedRoom(true);
 				}
 			},
@@ -94,6 +99,12 @@ export default function Page() {
 			(data: { playerId: string; playerName: string }) => {
 				logger.log("Player joined game", data);
 				toast(`${data.playerName} has joined the game!`);
+				setPlayersInLobby((prev) => {
+					if (!prev) {
+						return [];
+					}
+					return [...prev, data];
+				});
 			},
 		);
 
@@ -126,6 +137,17 @@ export default function Page() {
 				<div className="flex flex-col items-center justify-center min-h-screen">
 					<h1 className="text-4xl font-bold">Odd Duck</h1>
 					<p className="text-2xl font-bold">Room Code: {roomCode}</p>
+					{playersInLobby?.map((player) => {
+						console.log("Player", player);
+						return (
+							<div
+								key={player.playerId}
+								className="flex flex-row items-center justify-between w-full max-w-2xl p-4 border-b border-gray-300"
+							>
+								<p className="text-xl font-bold">{player.playerName}</p>
+							</div>
+						);
+					})}
 					{/* <Image
           src="/images/odd-duck.png"
           alt="Odd Duck"
