@@ -18,22 +18,27 @@ export default function Index() {
 		),
 	);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	const sound_quack = new Howl({
+		src: ["quack.mp3"],
+		volume: 0.3,
+		loop: false,
+	});
+
 	useEffect(() => {
-		const sound = new Howl({
+		const sound_theme = new Howl({
 			src: ["odd_duck_theme.mp3"],
 			volume: 0.3,
 			loop: true,
 		});
 
 		// Clear listener after first call.
-		sound.once("load", () => {
+		sound_theme.once("load", () => {
 			console.log("Sound loaded");
-			sound.play();
+			sound_theme.play();
 		});
 
 		// Fires when the sound finishes playing.
-		sound.on("end", () => {
+		sound_theme.on("end", () => {
 			console.log("Finished!");
 		});
 		const interval = setInterval(() => {
@@ -61,9 +66,8 @@ export default function Index() {
 		}, 5000);
 		return () => {
 			clearInterval(interval);
-			sound.stop();
+			sound_theme.stop();
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -131,6 +135,8 @@ export default function Index() {
 						buttonTitle="Create Game"
 						triggerButtonClick={() => {
 							logger.log("Create game clicked");
+							// play sound
+							sound_quack.play();
 							validatedWsClient?.current?.socket.emit(
 								"check_if_already_created_game_before",
 							);
@@ -148,6 +154,13 @@ export default function Index() {
 								minLength: 1,
 								maxLength: 20,
 								className: "col-span-3",
+								onChange: () => {
+									const lowerBound = 1.75;
+									const upperBound = 2;
+									const randomNum = Math.random() + lowerBound;
+									sound_quack.rate(randomNum < upperBound ? randomNum : lowerBound);
+									sound_quack.play();
+								},
 							},
 						]}
 						submitButtonOnClick={(e) => {
@@ -176,6 +189,11 @@ export default function Index() {
 
 					<Popup
 						buttonTitle="Join Game"
+						triggerButtonClick={() => {
+							logger.log("Join game clicked");
+							// play sound
+							sound_quack.play();
+						}}
 						dialogTitle="Join Game"
 						dialogDescription="What be your name veary traveller? And what be the code to the room ye be joinin?"
 						submitButtonTitle="Join Game"
@@ -198,7 +216,14 @@ export default function Index() {
 
 									if (value.length > 20) {
 										e.target.value = value.slice(0, 20);
+										return;
 									}
+
+									const lowerBound = 1.75;
+									const upperBound = 2;
+									const randomNum = Math.random() + lowerBound;
+									sound_quack.rate(randomNum < upperBound ? randomNum : lowerBound);
+									sound_quack.play();
 								},
 							},
 							{
@@ -221,7 +246,14 @@ export default function Index() {
 
 									if (formattedValue.length > 6) {
 										e.target.value = formattedValue.slice(0, 6);
+										return;
 									}
+
+									const lowerBound = 1.75;
+									const upperBound = 2;
+									const randomNum = Math.random() + lowerBound;
+									sound_quack.rate(randomNum < upperBound ? randomNum : lowerBound);
+									sound_quack.play();
 								},
 							},
 						]}

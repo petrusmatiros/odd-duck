@@ -5,10 +5,15 @@ import Popup from "../components/Popup/Popup";
 import { getCookie } from "../utils/cookie-utils";
 import { Logger } from "../utils/log-utils";
 
+interface Player {
+	id: string;
+	name: string;
+}
+
 export default function Page() {
 	const [isAllowedInRoom, setIsAllowedInRoom] = useState(false);
 	const [hasJoinedRoom, setHasJoinedRoom] = useState(false);
-	const [playersInLobby, setPlayersInLobby] = useState<{playerId: string, playerName: string}[]>([]);
+	const [playersInLobby, setPlayersInLobby] = useState<Player[]>([]);
 	const [, setIsHost] = useState(false);
 
 	const roomCode = window.location.pathname.split("/").pop();
@@ -51,7 +56,7 @@ export default function Page() {
 			(data: {
 				allowedState: "not_allowed" | "allow_join" | "allow_register";
 				isHost?: boolean;
-				playersInLobby?: { playerId: string; playerName: string }[];
+				playersInLobby?: Player[];
 				toastMessage: string;
 			}) => {
 				toast(data.toastMessage);
@@ -82,7 +87,7 @@ export default function Page() {
 			"direct_join_game_response",
 			(data: {
 				roomCode: string;
-				playersInLobby?: { playerId: string; playerName: string }[];
+				playersInLobby?: Player[];
 				toastMessage: string;
 			}) => {
 				logger.log("Direct join game response", data);
@@ -96,9 +101,9 @@ export default function Page() {
 
 		sockRef.on(
 			"player_joined_game_broadcast_all",
-			(data: { playerId: string; playerName: string }) => {
+			(data: Player) => {
 				logger.log("Player joined game", data);
-				toast(`${data.playerName} has joined the game!`);
+				toast(`${data.name} has joined the game!`);
 				setPlayersInLobby((prev) => {
 					if (!prev) {
 						return [];
@@ -141,10 +146,10 @@ export default function Page() {
 						console.log("Player", player);
 						return (
 							<div
-								key={player.playerId}
+								key={player.id}
 								className="flex flex-row items-center justify-between w-full max-w-2xl p-4 border-b border-gray-300"
 							>
-								<p className="text-xl font-bold">{player.playerName}</p>
+								<p className="text-xl font-bold">{player.name}</p>
 							</div>
 						);
 					})}
