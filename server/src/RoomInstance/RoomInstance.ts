@@ -5,16 +5,16 @@ import type { GameLocation } from "../../data/types";
 
 export class RoomInstance {
 	id: string;
-	host: PlayerInstance["id"] | null;
+	host: PlayerInstance | null;
 	location: GameLocation["id"] | null;
-	players: PlayerInstance["id"][];
-	spies: PlayerInstance["id"][];
-	civilians: PlayerInstance["id"][];
+	players: PlayerInstance[];
+	spies: PlayerInstance[];
+	civilians: PlayerInstance[];
 	gamePackId: string | null;
 	timer: TimerInstance;
 	gameState: "in_lobby" | "in_game";
 
-	constructor(host: string) {
+	constructor(host: PlayerInstance) {
 		this.id = cryptoRandomString({ length: 6, type: "distinguishable" });
 		this.host = host;
 		this.location = null;
@@ -35,8 +35,11 @@ export class RoomInstance {
 	getHost() {
 		return this.host;
 	}
-	setHost(newHost: string) {
+	setHost(newHost: PlayerInstance) {
 		this.host = newHost;
+	}
+	isHost(player: PlayerInstance) {
+		return this.host?.getId() === player.getId();
 	}
 	getLocation() {
 		return this.location;
@@ -44,54 +47,66 @@ export class RoomInstance {
 	setLocation(newLocation: GameLocation["id"]) {
 		this.location = newLocation;
 	}
-	addPlayer(playerId: string) {
-		if (!this.players.includes(playerId)) {
-			this.players.push(playerId);
-		}
+	addPlayer(player: PlayerInstance) {
+		const found = this.players.find((p) => p.getId() === player.getId());
+		if (!found) {
+			this.players.push(player);
+		} 
 	}
 	/**
 	 * Removes a player from the room (removes from all lists in the room).
-	 * @param {string} playerId - The ID of the player to remove.
+	 * @param {string} player - The player to remove.
 	 * 
 	 */
-	removePlayer(playerId: string) {
+	removePlayer(player: PlayerInstance) {
 		// Remove player from all lists since player is the lobby list, but spies and civilians are in game lists
-		this.players = this.players.filter((pId) => pId !== playerId);
-		this.civilians = this.civilians.filter((pId) => pId !== playerId);
-		this.spies = this.spies.filter((pId) => pId !== playerId);
+		this.players = this.players.filter((p) => p.getId() !== player.getId());
+		this.civilians = this.civilians.filter((civ) => civ.getId() !== player.getId());
+		this.spies = this.spies.filter((spy) => spy.getId() !== player.getId());
 	}
 	getPlayers() {
 		return this.players;
 	}
-	setPlayers(newPlayers: PlayerInstance["id"][]) {
+	isInPlayers(player: PlayerInstance) {
+		return this.players.some((p) => p.getId() === player.getId());
+	}
+	setPlayers(newPlayers: PlayerInstance[]) {
 		this.players = newPlayers;
 	}
-	addSpy(playerId: string) {
-		if (!this.spies.includes(playerId)) {
-			this.spies.push(playerId);
+	addSpy(player: PlayerInstance) {
+		const found = this.spies.find((spy) => spy.getId() === player.getId());
+		if (!found) {
+			this.spies.push(player);
 		}
 	}
-	removeSpy(playerId: string) {
-		this.spies = this.spies.filter((pId) => pId !== playerId);
+	removeSpy(player: PlayerInstance) {
+		this.spies = this.spies.filter((spy) => spy.getId()!== player.getId());
 	}
 	getSpies() {
 		return this.spies;
 	}
-	setSpies(newSpies: PlayerInstance["id"][]) {
+	isInSpies(player: PlayerInstance) {
+		return this.spies.some((spy) => spy.getId() === player.getId());
+	}
+	setSpies(newSpies: PlayerInstance[]) {
 		this.spies = newSpies;
 	}
-	addCivilian(playerId: string) {
-		if (!this.civilians.includes(playerId)) {
-			this.civilians.push(playerId);
+	addCivilian(player: PlayerInstance) {
+		const found = this.civilians.find((civ) => civ.getId() === player.getId());
+		if (!found) {
+			this.civilians.push(player);
 		}
 	}
-	removeCivilian(playerId: string) {
-		this.civilians = this.civilians.filter((pId) => pId !== playerId);
+	removeCivilian(player: PlayerInstance) {
+		this.civilians = this.civilians.filter((civ) => civ.getId()!== player.getId());
 	}
 	getCivilians() {
 		return this.civilians;
 	}
-	setCivilians(newCivilians: PlayerInstance["id"][]) {
+	isInCivilians(player: PlayerInstance) {
+		return this.civilians.some((civ) => civ.getId() === player.getId());
+	}
+	setCivilians(newCivilians: PlayerInstance[]) {
 		this.civilians = newCivilians;
 	}
 	getGamePackId() {

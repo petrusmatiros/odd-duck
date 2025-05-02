@@ -199,7 +199,7 @@ validatedNamespace.on("connection", (socket) => {
 		}
 		// Check if player is already a host of a room
 		for (const room of roomsRegistry.values()) {
-			if (room.getHost() === player.getId()) {
+			if (room.isHost(player)) {
 				logger.log({
 					socketId: socket.id,
 					token: token,
@@ -209,7 +209,7 @@ validatedNamespace.on("connection", (socket) => {
 				});
 
 				// Add player to players array in room
-				room.addPlayer(player.getId());
+				room.addPlayer(player);
 
 				// Let socket join the room
 				socket.join(room.getId());
@@ -259,7 +259,7 @@ validatedNamespace.on("connection", (socket) => {
 		// Ensure that player, creating the room, is not already a host of a room
 		// Iterate through all rooms, and check if the player matches the host
 		for (const room of roomsRegistry.values()) {
-			if (room.getHost() === player.getId()) {
+			if (room.isHost(player)) {
 				logger.log({
 					socketId: socket.id,
 					token: token,
@@ -269,7 +269,7 @@ validatedNamespace.on("connection", (socket) => {
 				});
 
 				// Add player to players array in room
-				room.addPlayer(player.getId());
+				room.addPlayer(player);
 
 				// Let socket join the room
 				socket.join(room.getId());
@@ -285,13 +285,13 @@ validatedNamespace.on("connection", (socket) => {
 		}
 
 		// Create new room
-		const newRoom = new RoomInstance(player.getId());
+		const newRoom = new RoomInstance(player);
 
 		// Add room to registry
 		roomsRegistry.set(newRoom.getId(), newRoom);
 
 		// Add player to players array
-		newRoom.addPlayer(player.getId());
+		newRoom.addPlayer(player);
 
 		// Let socket join the room
 		socket.join(newRoom.getId());
@@ -357,7 +357,7 @@ validatedNamespace.on("connection", (socket) => {
 
 
 		// Check if player is already in the room
-		if (room.getPlayers().includes(player.getId())) {
+		if (room.isInPlayers(player)) {
 			// TODO: need to handle logic here to rejoin? or will this ever happen?
 			// If a player is already apart of the players, and you cannot join when it's in game, that means this player must rejoin the game since they are apart of it and accidentally disconnected
 			logger.log({
@@ -387,7 +387,7 @@ validatedNamespace.on("connection", (socket) => {
 		}
 
 		// Add player to players array
-		room.addPlayer(player.getId());
+		room.addPlayer(player);
 
 		// Let socket join the room
 		socket.join(room.getId());
@@ -448,7 +448,7 @@ validatedNamespace.on("connection", (socket) => {
 			newPlayer.setName(data.name);
 
 			// Add player to players array
-			room.addPlayer(newPlayer.getId());
+			room.addPlayer(newPlayer);
 
 			// Let socket join the room
 			socket.join(room.getId());
@@ -464,6 +464,7 @@ validatedNamespace.on("connection", (socket) => {
 
 			socket.emit("direct_join_game_response", {
 				roomCode: room.getId(),
+				playersInLobby: room.getPlayers(),
 				toastMessage: `You have joined the game as ${data.name}`,
 			});
 
@@ -526,7 +527,7 @@ validatedNamespace.on("connection", (socket) => {
 			return;
 		}
 		// Check if player is the host of the room
-		if (room.getHost() === player.getId()) {
+		if (room.isHost(player)) {
 			logger.log({
 				socketId: socket.id,
 				token: token,
@@ -537,6 +538,7 @@ validatedNamespace.on("connection", (socket) => {
 			socket.emit("check_if_allowed_in_game_response", {
 				allowedState: "allow_join",
 				isHost: true,
+				playersInLobby: room.getPlayers(),
 				toastMessage: "You can join - welcome back, host!",
 			});
 			io.to(room.getId()).emit("player_joined_game_broadcast_all", {
@@ -546,7 +548,7 @@ validatedNamespace.on("connection", (socket) => {
 			return;
 		}
 		// Check if player is not in the room
-		if (!room.getPlayers().includes(player.getId())) {
+		if (!room.isInPlayers(player)) {
 			logger.log({
 				socketId: socket.id,
 				token: token,
@@ -582,6 +584,7 @@ validatedNamespace.on("connection", (socket) => {
 			// If it is not in progress, then the player can join the game
 			socket.emit("check_if_allowed_in_game_response", {
 				allowedState: "allow_join",
+				playersInLobby: room.getPlayers(),
 				toastMessage: `Joined room ${data.code}`,
 			});
 			return;
@@ -635,7 +638,7 @@ validatedNamespace.on("connection", (socket) => {
 			const PLAYER_ID = player.getId();
 
 			// !IMPORTANT, if the socket is a player, that is a host of a room, reset the game (everyone goes back to lobby)
-			if (room.getHost() === PLAYER_ID) {
+			if (room.getHost()?.getId() === PLAYER_ID) {
 				logger.log({
 					socketId: socket.id,
 					token: token,
@@ -653,7 +656,7 @@ validatedNamespace.on("connection", (socket) => {
 			}
 
 			// Remove player from room (removes them from all lists)
-			room.removePlayer(PLAYER_ID);
+			room.removePlayer(player);
 
 			// !IMPORTANT: no need to leave room since this will be done on 'disconnect'
 		}
