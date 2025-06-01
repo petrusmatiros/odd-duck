@@ -111,6 +111,9 @@ function onConnectionHelper(socket: Socket) {
 			namespace: validatedNamespaceConstant,
 			event: "connection_helper",
 			message: "No player instance found for token or token is invalid",
+			data: {
+				token: token,
+			},
 		});
 
 		// Generate a new UUID
@@ -121,6 +124,9 @@ function onConnectionHelper(socket: Socket) {
 			namespace: validatedNamespaceConstant,
 			event: "connection_helper",
 			message: "Creating new player instance",
+			data: {
+				newUUID: newUUID,
+			},
 		});
 		const newPlayer = new PlayerInstance();
 		playersRegistry.set(newUUID, newPlayer);
@@ -166,6 +172,9 @@ function rejoinRoomsHelper(socket: Socket) {
 			namespace: validatedNamespaceConstant,
 			event: "rejoin_rooms_helper",
 			message: "No player instance found for token",
+			data: {
+				token: token,
+			},
 		});
 		return;
 	}
@@ -221,7 +230,10 @@ validatedNamespace.on("connection", (socket) => {
 			token: token,
 			event: "check_if_already_created_game_before",
 			namespace: validatedNamespaceConstant,
-			message: "check if already created game before",
+			message: "Check if already created game before",
+			data: {
+				token: token,
+			},
 		});
 
 		// Check if player already exists
@@ -234,6 +246,9 @@ validatedNamespace.on("connection", (socket) => {
 				event: "check_if_already_created_game_before",
 				namespace: validatedNamespaceConstant,
 				message: "No player instance found for token",
+				data: {
+					token: token,
+				},
 			});
 			return;
 		}
@@ -288,6 +303,7 @@ validatedNamespace.on("connection", (socket) => {
 				event: "create_game",
 				namespace: validatedNamespaceConstant,
 				message: "No player instance found for token",
+				data: data,
 			});
 			return;
 		}
@@ -306,6 +322,10 @@ validatedNamespace.on("connection", (socket) => {
 					event: "create_game",
 					namespace: validatedNamespaceConstant,
 					message: "Player already a host of a room",
+					data: {
+						player: player,
+						room: room,
+					},
 				});
 
 				// Add player to players array in room
@@ -375,6 +395,7 @@ validatedNamespace.on("connection", (socket) => {
 				event: "join_game",
 				namespace: validatedNamespaceConstant,
 				message: "No room instance found for code",
+				data: data,
 			});
 			return;
 		}
@@ -388,6 +409,7 @@ validatedNamespace.on("connection", (socket) => {
 				event: "join_game",
 				namespace: validatedNamespaceConstant,
 				message: "No player instance found for token",
+				data: data,
 			});
 			return;
 		}
@@ -405,6 +427,10 @@ validatedNamespace.on("connection", (socket) => {
 				event: "join_game",
 				namespace: validatedNamespaceConstant,
 				message: "Player already in room",
+				data: {
+					player: player,
+					room: room,
+				},
 			});
 
 			socket.emit("entered_game_response", {
@@ -421,6 +447,10 @@ validatedNamespace.on("connection", (socket) => {
 				event: "join_game",
 				namespace: validatedNamespaceConstant,
 				message: "Game is already in progress",
+				data: {
+					player: player,
+					room: room,
+				},
 			});
 			return;
 		}
@@ -469,6 +499,7 @@ validatedNamespace.on("connection", (socket) => {
 				event: "direct_join_game",
 				namespace: validatedNamespaceConstant,
 				message: "No room instance found for code",
+				data: data,
 			});
 			return;
 		}
@@ -482,6 +513,7 @@ validatedNamespace.on("connection", (socket) => {
 				event: "direct_join_game",
 				namespace: validatedNamespaceConstant,
 				message: "No player instance found for token",
+				data: data,
 			});
 			return;
 		}
@@ -492,6 +524,7 @@ validatedNamespace.on("connection", (socket) => {
 				event: "direct_join_game",
 				namespace: validatedNamespaceConstant,
 				message: "Setting player name for player instance",
+				data: data,
 			});
 
 			player.setName(data.name);
@@ -555,6 +588,7 @@ validatedNamespace.on("connection", (socket) => {
 				event: "check_if_allowed_in_game",
 				namespace: validatedNamespaceConstant,
 				message: "No room instance found for code",
+				data: data,
 			});
 			socket.emit("check_if_allowed_in_game_response", {
 				allowedState: "not_allowed",
@@ -573,6 +607,7 @@ validatedNamespace.on("connection", (socket) => {
 				namespace: validatedNamespaceConstant,
 				message:
 					"Socket is attempting direct join. Player exists but has no name",
+				data: data,
 			});
 			socket.emit("check_if_allowed_in_game_response", {
 				allowedState: "allow_register",
@@ -589,6 +624,10 @@ validatedNamespace.on("connection", (socket) => {
 				event: "check_if_allowed_in_game",
 				namespace: validatedNamespaceConstant,
 				message: "Player is host of room",
+				data: {
+					player: player,
+					room: room,
+				},
 			});
 			socket.emit("check_if_allowed_in_game_response", {
 				allowedState: "allow_join",
@@ -596,6 +635,7 @@ validatedNamespace.on("connection", (socket) => {
 				playersInLobby: room.getPlayers(),
 				toastMessage: "You can join - welcome back, host!",
 			});
+
 			validatedNamespace
 				.to(room.getId())
 				.emit("player_joined_game_broadcast_all", {
@@ -605,6 +645,7 @@ validatedNamespace.on("connection", (socket) => {
 					},
 					playersInLobby: room.getPlayers(),
 				});
+
 			return;
 		}
 		// Check if player is not in the room
@@ -615,6 +656,10 @@ validatedNamespace.on("connection", (socket) => {
 				event: "check_if_allowed_in_game",
 				namespace: validatedNamespaceConstant,
 				message: "Player not in room",
+				data: {
+					player: player,
+					room: room,
+				},
 			});
 
 			// Check if game is already in progress
@@ -625,6 +670,10 @@ validatedNamespace.on("connection", (socket) => {
 					event: "check_if_allowed_in_game",
 					namespace: validatedNamespaceConstant,
 					message: "Game is already in progress",
+					data: {
+						player: player,
+						room: room,
+					},
 				});
 				socket.emit("check_if_allowed_in_game_response", {
 					allowedState: "not_allowed",
@@ -639,6 +688,10 @@ validatedNamespace.on("connection", (socket) => {
 				event: "check_if_allowed_in_game",
 				namespace: validatedNamespaceConstant,
 				message: "Allowed to join game",
+				data: {
+					player: player,
+					room: room,
+				},
 			});
 
 			// If it is not in progress, then the player can join the game
@@ -657,6 +710,10 @@ validatedNamespace.on("connection", (socket) => {
 			event: "check_if_allowed_in_game",
 			namespace: validatedNamespaceConstant,
 			message: "Player already in room",
+			data: {
+				player: player,
+				room: room,
+			},
 		});
 		socket.emit("check_if_allowed_in_game_response", {
 			allowedState: "allow_join",
@@ -707,6 +764,9 @@ validatedNamespace.on("connection", (socket) => {
 					event: "disconnecting",
 					namespace: validatedNamespaceConstant,
 					message: "No room instance found for code",
+					data: {
+						roomId: roomInstanceId,
+					},
 				});
 				// If we dont find one, we contine
 				continue;
@@ -720,6 +780,10 @@ validatedNamespace.on("connection", (socket) => {
 					event: "disconnecting",
 					namespace: validatedNamespaceConstant,
 					message: "Player is host of room",
+					data: {
+						roomId: room.getId(),
+						playerId: player.getId(),
+					},
 				});
 
 				// Resets the game, though does not kick the players
@@ -730,12 +794,12 @@ validatedNamespace.on("connection", (socket) => {
 				});
 			}
 
-			// validatedNamespace
-			// 	.to(room.getId())
-			// 	.emit("player_disconnected_broadcast_all", {
-			// 		player: { id: player.getId(), name: player.getName() },
-			// 		playersInLobby: room.getPlayers(),
-			// 	});
+			validatedNamespace
+				.to(room.getId())
+				.emit("player_disconnected_broadcast_all", {
+					player: { id: player.getId(), name: player.getName() },
+					playersInLobby: room.getPlayers(),
+				});
 
 			// Remove player from room (removes them from all lists)
 			room.removePlayer(player);
