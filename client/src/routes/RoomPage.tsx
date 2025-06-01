@@ -8,6 +8,7 @@ import {
 	setCookie,
 } from "../utils/cookie-utils";
 import { Logger } from "../utils/log-utils";
+import { copyToClipboard } from "@/utils/clipboard-utils";
 
 interface Player {
 	id: string;
@@ -36,12 +37,12 @@ export default function Page() {
 		if (!validatedWsClient?.current) {
 			return;
 		}
-
 		const sockRef = validatedWsClient?.current.socket;
 
 		console.log("Validated socket", sockRef);
 
 		console.log("Room code", roomCode);
+		copyToClipboard(window.location.href)
 		sockRef.on("connect", () => {
 			logger.log("Validated socket connected");
 			sockRef.emit("check_if_allowed_in_game", {
@@ -133,7 +134,6 @@ export default function Page() {
 			"player_disconnected_broadcast_all",
 			(data: { player: Player; playersInLobby: Player[] }) => {
 				logger.log("Player left game", data);
-				toast(`${data.player.name} has left the game!`);
 				setPlayersInLobby(data.playersInLobby || []);
 			},
 		);

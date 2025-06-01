@@ -179,7 +179,7 @@ function rejoinRoomsHelper(socket: Socket) {
 		return;
 	}
 
-	// Join the player's own room⁄
+	// Join the player's own room
 	socket.join(player.getId());
 
 	for (const room of roomsRegistry.values()) {
@@ -660,14 +660,6 @@ validatedNamespace.on("connection", (socket) => {
 				toastMessage: `You have joined the game as ${player.getName()}`,
 			});
 
-			logger.log("broadcast to all players in room");
-			logger.log(room.getPlayers());
-			logger.log(room.getHost());
-
-			validatedNamespace.to(room.getHost().getId()).emit("test", {
-				message: "Broadcasting to all players in room",
-			});
-
 			// Send to all players in the room
 			validatedNamespace
 				.to(room.getId())
@@ -871,20 +863,15 @@ validatedNamespace.on("connection", (socket) => {
 	});
 
 	/**
-	 * disconnecting
-	 * Here the rooms for a socket are still present.
+	 * disconnect
+	 * Here the rooms for a socket are empty.
+	 * Issue: is called 4 times when a player disconnects.
 	 */
-	socket.on("disconnecting", () => {
+	socket.on("disconnect", () => {
 		const token = socket.handshake.auth.token;
-		// socket.rooms.size > 0 here
-
-		logger.log({
-			socketId: socket.id,
-			token: token,
-			event: "disconnecting",
-			namespace: validatedNamespaceConstant,
-			message: "user attempting to disconnect",
-		});
+		socket.handshake.auth.token = null; // Clear the token to prevent reuse
+		logger.log("socket id", socket.id);
+		// socket.rooms.size === 0 here
 
 		// Check if the player is a valid player
 		const player = playersRegistry.get(token);
@@ -892,38 +879,20 @@ validatedNamespace.on("connection", (socket) => {
 			logger.log({
 				socketId: socket.id,
 				token: token,
-				event: "disconnecting",
+				event: "disconnect",
 				namespace: validatedNamespaceConstant,
 				message: "No player instance found for token",
 			});
 			return;
 		}
 
-		// Go through all rooms, and make sure to remove the player from the room
-		for (const roomInstanceId of socket.rooms) {
-			// Check if the roomId is a valid room
-			const room = roomsRegistry.get(roomInstanceId);
-			if (!room) {
-				logger.log({
-					socketId: socket.id,
-					token: token,
-					event: "disconnecting",
-					namespace: validatedNamespaceConstant,
-					message: "No room instance found for code",
-					data: {
-						roomId: roomInstanceId,
-					},
-				});
-				// If we dont find one, we contine
-				continue;
-			}
-
-			// !IMPORTANT, if the socket is a player, that is a host of a room, reset the game (everyone goes back to lobby)
+		for (const room of roomsRegistry.values()) {
+			// If the player is a host of the room, reset the game
 			if (room.getHost().getId() === player.getId()) {
 				logger.log({
 					socketId: socket.id,
 					token: token,
-					event: "disconnecting",
+					event: "disconnect",
 					namespace: validatedNamespaceConstant,
 					message: "Player is host of room",
 					data: {
@@ -931,14 +900,14 @@ validatedNamespace.on("connection", (socket) => {
 						playerId: player.getId(),
 					},
 				});
-
 				// Resets the game, though does not kick the players
 				room.resetGame();
-
 				validatedNamespace.to(room.getId()).emit("host_disconnected", {
 					host: player.getId(),
 				});
 			}
+			// Remove player from room (removes them from all lists)
+			room.removePlayer(player);
 
 			validatedNamespace
 				.to(room.getId())
@@ -946,29 +915,8 @@ validatedNamespace.on("connection", (socket) => {
 					player: { id: player.getId(), name: player.getName() },
 					playersInLobby: room.getPlayers(),
 				});
-
-			// Remove player from room (removes them from all lists)
-			room.removePlayer(player);
-
-			// !IMPORTANT: no need to leave room for socket since this will be done on 'disconnect'
 		}
 
-		logger.log({
-			socketId: socket.id,
-			token: token,
-			event: "disconnecting",
-			namespace: validatedNamespaceConstant,
-			message: "user disconnected",
-		});
-	});
-
-	/**
-	 * disconnect
-	 * Here the rooms for a socket are empty.
-	 */
-	socket.on("disconnect", () => {
-		const token = socket.handshake.auth.token;
-		// socket.rooms.size === 0 here
 		logger.log({
 			socketId: socket.id,
 			token: token,
@@ -976,5 +924,7 @@ validatedNamespace.on("connection", (socket) => {
 			namespace: validatedNamespaceConstant,
 			message: "user disconnected",
 		});
+
+		console.log("===DISCONNECTED===");
 	});
 });
