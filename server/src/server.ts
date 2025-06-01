@@ -324,7 +324,7 @@ validatedNamespace.on("connection", (socket) => {
 					message: "Player already a host of a room",
 					data: {
 						player: player,
-						room: room,
+						room: room.getId(),
 					},
 				});
 
@@ -429,7 +429,7 @@ validatedNamespace.on("connection", (socket) => {
 				message: "Player already in room",
 				data: {
 					player: player,
-					room: room,
+					room: room.getId(),
 				},
 			});
 
@@ -449,7 +449,7 @@ validatedNamespace.on("connection", (socket) => {
 				message: "Game is already in progress",
 				data: {
 					player: player,
-					room: room,
+					room: room.getId(),
 				},
 			});
 			return;
@@ -626,7 +626,7 @@ validatedNamespace.on("connection", (socket) => {
 				message: "Player is host of room",
 				data: {
 					player: player,
-					room: room,
+					room: room.getId(),
 				},
 			});
 			socket.emit("check_if_allowed_in_game_response", {
@@ -658,7 +658,7 @@ validatedNamespace.on("connection", (socket) => {
 				message: "Player not in room",
 				data: {
 					player: player,
-					room: room,
+					room: room.getId(),
 				},
 			});
 
@@ -672,7 +672,7 @@ validatedNamespace.on("connection", (socket) => {
 					message: "Game is already in progress",
 					data: {
 						player: player,
-						room: room,
+						room: room.getId(),
 					},
 				});
 				socket.emit("check_if_allowed_in_game_response", {
@@ -690,7 +690,7 @@ validatedNamespace.on("connection", (socket) => {
 				message: "Allowed to join game",
 				data: {
 					player: player,
-					room: room,
+					room: room.getId(),
 				},
 			});
 
@@ -712,7 +712,7 @@ validatedNamespace.on("connection", (socket) => {
 			message: "Player already in room",
 			data: {
 				player: player,
-				room: room,
+				room: room.getId(),
 			},
 		});
 		socket.emit("check_if_allowed_in_game_response", {
