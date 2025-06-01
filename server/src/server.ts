@@ -715,19 +715,15 @@ validatedNamespace.on("connection", (socket) => {
 					room: room.getId(),
 				},
 			});
+
+			// Makre sure to re-add the player to the room
+			room.addPlayer(player);
+
 			socket.emit("check_if_allowed_in_game_response", {
 				allowedState: "allow_join",
 				isHost: true,
 				playersInLobby: room.getPlayers(),
 				toastMessage: "You can join - welcome back, host!",
-			});
-
-			socket.emit("player_joined_game_broadcast_all", {
-				player: {
-					id: player.getId(),
-					name: player.getName(),
-				},
-				playersInLobby: room.getPlayers(),
 			});
 
 			// Send to all players in the room
@@ -788,6 +784,9 @@ validatedNamespace.on("connection", (socket) => {
 					room: room.getId(),
 				},
 			});
+
+			// Makre sure to re-add the player to the room
+			room.addPlayer(player);
 
 			// If it is not in progress, then the player can join the game
 			socket.emit("check_if_allowed_in_game_response", {
