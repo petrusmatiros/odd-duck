@@ -349,10 +349,23 @@ validatedNamespace.on("connection", (socket) => {
 		// Set player name
 		player.setName(data.name);
 
-		// TODO:
 		// Ensure that player, creating the room, is not already a host of a room
 		// Iterate through all rooms, and check if the player matches the host
-		for (const room of roomsRegistry.values()) {
+		for (const roomInstanceId of roomsRegistry.values()) {
+			const room = roomsRegistry.get(roomInstanceId.getId());
+			if (!room) {
+				logger.log({
+					socketId: socket.id,
+					token: token,
+					event: "create_game",
+					namespace: validatedNamespaceConstant,
+					message: "No room instance found for code",
+					data: {
+						roomId: roomInstanceId.getId(),
+					},
+				});
+				continue;
+			}
 			if (room.isHost(player)) {
 				logger.log({
 					socketId: socket.id,
@@ -373,7 +386,7 @@ validatedNamespace.on("connection", (socket) => {
 				socket.join(room.getId());
 
 				// TODO: make host join their own already created room
-				socket.emit("entered_game_response", {
+				socket.emit("check_if_already_created_game_before_response", {
 					roomCode: room.getId(),
 					toastMessage: "You are already a host of a room",
 				});
@@ -403,7 +416,7 @@ validatedNamespace.on("connection", (socket) => {
 			data: newRoom,
 		});
 
-		socket.emit("entered_game_response", {
+		socket.emit("check_if_already_created_game_before_response", {
 			roomCode: newRoom.getId(),
 			toastMessage: "You have created a new game",
 		});
@@ -452,6 +465,27 @@ validatedNamespace.on("connection", (socket) => {
 			return;
 		}
 
+		// check if player is host of the room
+		if (room.isHost(player)) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "join_game",
+				namespace: validatedNamespaceConstant,
+				message: "Player is host of room",
+				data: {
+					player: player,
+					room: room.getId(),
+				},
+			});
+
+			socket.emit("check_if_already_created_game_before_response", {
+				roomCode: room.getId(),
+				toastMessage: `You are the host of the room ${data.code}`,
+			});
+			return;
+		}
+
 		// Set player name
 		// Ensure that if player already has a name, null will be passed
 		if (data.name) {
@@ -483,7 +517,7 @@ validatedNamespace.on("connection", (socket) => {
 				},
 			});
 
-			socket.emit("entered_game_response", {
+			socket.emit("check_if_already_created_game_before_response", {
 				roomCode: room.getId(),
 			});
 			return;
@@ -512,7 +546,7 @@ validatedNamespace.on("connection", (socket) => {
 		socket.join(room.getId());
 
 		// Emit to the player that they have joined the game
-		socket.emit("entered_game_response", {
+		socket.emit("check_if_already_created_game_before_response", {
 			roomCode: room.getId(),
 		});
 
