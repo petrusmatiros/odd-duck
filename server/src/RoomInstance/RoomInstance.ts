@@ -5,7 +5,7 @@ import type { GameLocation } from "../../data/types";
 
 export class RoomInstance {
 	id: string;
-	host: PlayerInstance | null;
+	host: PlayerInstance;
 	location: GameLocation["id"] | null;
 	players: PlayerInstance[];
 	spies: PlayerInstance[];

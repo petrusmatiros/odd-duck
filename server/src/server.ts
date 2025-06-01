@@ -99,7 +99,6 @@ function onConnectionHelper(socket: Socket) {
 		message: "a user connected",
 	});
 
-
 	// Retrieve token and check if player exists (should be done in middleware)
 	const token = socket.handshake.auth.token;
 
@@ -148,12 +147,52 @@ function onConnectionHelper(socket: Socket) {
 	return;
 }
 
+function rejoinRoomsHelper(socket: Socket) {
+	logger.log({
+		socketId: socket.id,
+		token: socket.handshake.auth.token,
+		namespace: validatedNamespaceConstant,
+		event: "rejoin_rooms_helper",
+		message: "Rejoining rooms for player",
+	});
+
+	const token = socket.handshake.auth.token;
+	const player = playersRegistry.get(token);
+
+	if (!player) {
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			namespace: validatedNamespaceConstant,
+			event: "rejoin_rooms_helper",
+			message: "No player instance found for token",
+		});
+		return;
+	}
+
+	for (const room of roomsRegistry.values()) {
+		if (room.isInPlayers(player) && !socket.rooms.has(room.getId())) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				namespace: validatedNamespaceConstant,
+				event: "rejoin_rooms_helper",
+				message: "Rejoining room",
+				data: room.getId(),
+			});
+			socket.join(room.getId());
+		}
+	}
+	return;
+}
+
 /**
  * connection
  * This event is fired when a new socket connection is established.
  */
 validatedNamespace.on("connection", (socket) => {
 	onConnectionHelper(socket);
+	rejoinRoomsHelper(socket);
 
 	/**
 	 * validated_player
@@ -356,7 +395,6 @@ validatedNamespace.on("connection", (socket) => {
 		// Set player name
 		player.setName(data.name);
 
-
 		// Check if player is already in the room
 		if (room.isInPlayers(player)) {
 			// TODO: need to handle logic here to rejoin? or will this ever happen?
@@ -399,9 +437,12 @@ validatedNamespace.on("connection", (socket) => {
 		});
 
 		// Send to all players in the room
-		io.to(room.getId()).emit("player_joined_game_broadcast_all", {
-			playerId: player.getId(),
-			playerName: data.name,
+		validatedNamespace.to(room.getId()).emit("player_joined_game_broadcast_all", {
+			player: {
+				id: player.getId(),
+				name: player.getName(),
+			},
+			playersInLobby: room.getPlayers(),
 		});
 	});
 
@@ -409,7 +450,7 @@ validatedNamespace.on("connection", (socket) => {
 	 * direct_join_game
 	 * This event is fired when the client emits a direct_join_game event.
 	 */
-	socket.on("direct_join_game", (data: { name: string, code: string }) => {
+	socket.on("direct_join_game", (data: { name: string; code: string }) => {
 		const token = socket.handshake.auth.token;
 		logger.log({
 			socketId: socket.id,
@@ -442,14 +483,21 @@ validatedNamespace.on("connection", (socket) => {
 				namespace: validatedNamespaceConstant,
 				message: "No player instance found for token",
 			});
-		
-			const newPlayer = new PlayerInstance();
-			playersRegistry.set(token, newPlayer);
+			return;
+		}
+		if (!player?.getName()) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "direct_join_game",
+				namespace: validatedNamespaceConstant,
+				message: "Setting player name for player instance",
+			});
 
-			newPlayer.setName(data.name);
+			player.setName(data.name);
 
 			// Add player to players array
-			room.addPlayer(newPlayer);
+			room.addPlayer(player);
 
 			// Let socket join the room
 			socket.join(room.getId());
@@ -459,21 +507,26 @@ validatedNamespace.on("connection", (socket) => {
 				token: token,
 				event: "direct_join_game",
 				namespace: validatedNamespaceConstant,
-				message: "new player created",
-				data: newPlayer,
+				message: "new player name set",
+				data: player,
 			});
 
 			socket.emit("direct_join_game_response", {
 				roomCode: room.getId(),
 				playersInLobby: room.getPlayers(),
-				toastMessage: `You have joined the game as ${data.name}`,
+				toastMessage: `You have joined the game as ${player.getName()}`,
 			});
 
 			// Send to all players in the room
-			io.to(room.getId()).emit("player_joined_game_broadcast_all", {
-				playerId: newPlayer.getId(),
-				playerName: data.name,
-			});
+			validatedNamespace
+				.to(room.getId())
+				.emit("player_joined_game_broadcast_all", {
+					player: {
+						id: player.getId(),
+						name: player.getName(),
+					},
+					playersInLobby: room.getPlayers(),
+				});
 
 			return;
 		}
@@ -543,10 +596,15 @@ validatedNamespace.on("connection", (socket) => {
 				playersInLobby: room.getPlayers(),
 				toastMessage: "You can join - welcome back, host!",
 			});
-			io.to(room.getId()).emit("player_joined_game_broadcast_all", {
-				playerId: player.getId(),
-				playerName: player.getName(),
-			});
+			validatedNamespace
+				.to(room.getId())
+				.emit("player_joined_game_broadcast_all", {
+					player: {
+						id: player.getId(),
+						name: player.getName(),
+					},
+					playersInLobby: room.getPlayers(),
+				});
 			return;
 		}
 		// Check if player is not in the room
@@ -591,8 +649,22 @@ validatedNamespace.on("connection", (socket) => {
 			});
 			return;
 		}
+
+		// player is already in the room
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			event: "check_if_allowed_in_game",
+			namespace: validatedNamespaceConstant,
+			message: "Player already in room",
+		});
+		socket.emit("check_if_allowed_in_game_response", {
+			allowedState: "allow_join",
+			playersInLobby: room.getPlayers(),
+			toastMessage: `You are already in the room ${data.code}`,
+		});
 	});
-		
+
 	/**
 	 * disconnecting
 	 * Here the rooms for a socket are still present.
@@ -609,10 +681,25 @@ validatedNamespace.on("connection", (socket) => {
 			message: "user attempting to disconnect",
 		});
 
+		logger.log(socket.rooms);
+
+		// Check if the player is a valid player
+		const player = playersRegistry.get(token);
+		if (!player) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "disconnecting",
+				namespace: validatedNamespaceConstant,
+				message: "No player instance found for token",
+			});
+			return;
+		}
+
 		// Go through all rooms, and make sure to remove the player from the room
-		for (const roomId of socket.rooms) {
+		for (const roomInstanceId of socket.rooms) {
 			// Check if the roomId is a valid room
-			const room = roomsRegistry.get(roomId);
+			const room = roomsRegistry.get(roomInstanceId);
 			if (!room) {
 				logger.log({
 					socketId: socket.id,
@@ -621,26 +708,12 @@ validatedNamespace.on("connection", (socket) => {
 					namespace: validatedNamespaceConstant,
 					message: "No room instance found for code",
 				});
-				return;
+				// If we dont find one, we contine
+				continue;
 			}
-
-			// Check if the player is a valid player
-			const player = playersRegistry.get(token);
-			if (!player) {
-				logger.log({
-					socketId: socket.id,
-					token: token,
-					event: "disconnecting",
-					namespace: validatedNamespaceConstant,
-					message: "No player instance found for token",
-				});
-				return;
-			}
-
-			const PLAYER_ID = player.getId();
 
 			// !IMPORTANT, if the socket is a player, that is a host of a room, reset the game (everyone goes back to lobby)
-			if (room.getHost()?.getId() === PLAYER_ID) {
+			if (room.getHost().getId() === player.getId()) {
 				logger.log({
 					socketId: socket.id,
 					token: token,
@@ -652,10 +725,17 @@ validatedNamespace.on("connection", (socket) => {
 				// Resets the game, though does not kick the players
 				room.resetGame();
 
-				socket.broadcast.to(roomId).emit("host_disconnected", {
-					host: PLAYER_ID,
+				validatedNamespace.to(room.getId()).emit("host_disconnected", {
+					host: player.getId(),
 				});
 			}
+
+			// validatedNamespace
+			// 	.to(room.getId())
+			// 	.emit("player_disconnected_broadcast_all", {
+			// 		player: { id: player.getId(), name: player.getName() },
+			// 		playersInLobby: room.getPlayers(),
+			// 	});
 
 			// Remove player from room (removes them from all lists)
 			room.removePlayer(player);

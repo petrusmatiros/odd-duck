@@ -115,15 +115,16 @@ export default function Page() {
 			},
 		);
 
-		sockRef.on("player_joined_game_broadcast_all", (data: Player) => {
+		sockRef.on("player_joined_game_broadcast_all", (data: { player: Player, playersInLobby: Player[] }) => {
 			logger.log("Player joined game", data);
-			toast(`${data.name} has joined the game!`);
-			setPlayersInLobby((prev) => {
-				if (!prev) {
-					return [];
-				}
-				return [...prev, data];
-			});
+			toast(`${data.player.name} has joined the game!`);
+			setPlayersInLobby(data.playersInLobby || []);
+		});
+
+		sockRef.on("player_disconnected_broadcast_all", (data: { player: Player, playersInLobby: Player[] }) => {
+			logger.log("Player left game", data);
+			toast(`${data.player.name} has left the game!`);
+			setPlayersInLobby(data.playersInLobby || []);
 		});
 
 		return () => {
@@ -207,7 +208,6 @@ export default function Page() {
 					<h1 className="text-4xl font-bold">Odd Duck</h1>
 					<p className="text-2xl font-bold">Room Code: {roomCode}</p>
 					{playersInLobby?.map((player) => {
-						console.log("Player", player);
 						return (
 							<div
 								key={player.id}
