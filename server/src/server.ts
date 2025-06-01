@@ -180,7 +180,7 @@ function rejoinRoomsHelper(socket: Socket) {
 	}
 
 	for (const room of roomsRegistry.values()) {
-		if (room.isInPlayers(player) && !socket.rooms.has(room.getId())) {
+		if (room.hasPlayer(player) && !socket.rooms.has(room.getId())) {
 			logger.log({
 				socketId: socket.id,
 				token: token,
@@ -502,7 +502,7 @@ validatedNamespace.on("connection", (socket) => {
 		}
 
 		// Check if player is already in the room
-		if (room.isInPlayers(player)) {
+		if (room.hasPlayer(player)) {
 			// TODO: need to handle logic here to rejoin? or will this ever happen?
 			// If a player is already apart of the players, and you cannot join when it's in game, that means this player must rejoin the game since they are apart of it and accidentally disconnected
 			logger.log({
@@ -636,6 +636,18 @@ validatedNamespace.on("connection", (socket) => {
 				toastMessage: `You have joined the game as ${player.getName()}`,
 			});
 
+			logger.log("broadcast to all players in room");
+			logger.log(room.getPlayers());
+			logger.log(room.getHost());
+
+			socket.broadcast.to(room.getId()).emit("player_joined_game_broadcast_all", {
+				player: {
+					id: player.getId(),
+					name: player.getName(),
+				},
+				playersInLobby: room.getPlayers(),
+			});
+
 			// Send to all players in the room
 			validatedNamespace
 				.to(room.getId())
@@ -721,7 +733,7 @@ validatedNamespace.on("connection", (socket) => {
 
 			socket.emit("check_if_allowed_in_game_response", {
 				allowedState: "allow_join",
-				isHost: true,
+				isHost: room.getHost().getId(),
 				playersInLobby: room.getPlayers(),
 				toastMessage: "You can join - welcome back, host!",
 			});
@@ -740,7 +752,7 @@ validatedNamespace.on("connection", (socket) => {
 			return;
 		}
 		// Check if player is not in the room
-		if (!room.isInPlayers(player)) {
+		if (!room.hasPlayer(player)) {
 			logger.log({
 				socketId: socket.id,
 				token: token,
@@ -794,6 +806,17 @@ validatedNamespace.on("connection", (socket) => {
 				playersInLobby: room.getPlayers(),
 				toastMessage: `Joined room ${data.code}`,
 			});
+
+			// Send to all players in the room
+			validatedNamespace
+				.to(room.getId())
+				.emit("player_joined_game_broadcast_all", {
+					player: {
+						id: player.getId(),
+						name: player.getName(),
+					},
+					playersInLobby: room.getPlayers(),
+				});
 			return;
 		}
 
@@ -814,6 +837,17 @@ validatedNamespace.on("connection", (socket) => {
 			playersInLobby: room.getPlayers(),
 			toastMessage: `You are already in the room ${data.code}`,
 		});
+
+		// Send to all players in the room
+		validatedNamespace
+			.to(room.getId())
+			.emit("player_joined_game_broadcast_all", {
+				player: {
+					id: player.getId(),
+					name: player.getName(),
+				},
+				playersInLobby: room.getPlayers(),
+			});
 	});
 
 	/**
@@ -831,8 +865,6 @@ validatedNamespace.on("connection", (socket) => {
 			namespace: validatedNamespaceConstant,
 			message: "user attempting to disconnect",
 		});
-
-		logger.log(socket.rooms);
 
 		// Check if the player is a valid player
 		const player = playersRegistry.get(token);
@@ -898,7 +930,7 @@ validatedNamespace.on("connection", (socket) => {
 			// Remove player from room (removes them from all lists)
 			room.removePlayer(player);
 
-			// !IMPORTANT: no need to leave room since this will be done on 'disconnect'
+			// !IMPORTANT: no need to leave room for socket since this will be done on 'disconnect'
 		}
 
 		logger.log({

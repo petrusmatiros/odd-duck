@@ -30,7 +30,7 @@ type CookieOptions = {
 };
 
 export const defaultCookieOptions: CookieOptions["options"] = {
-	secure: true,
+	secure: false,
 	sameSite: "Strict",
 	maxAge: 60 * 60 * 24, // 1 day
 	path: "/",

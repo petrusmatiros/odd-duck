@@ -18,7 +18,7 @@ export default function Page() {
 	const [isAllowedInRoom, setIsAllowedInRoom] = useState(false);
 	const [hasJoinedRoom, setHasJoinedRoom] = useState(false);
 	const [playersInLobby, setPlayersInLobby] = useState<Player[]>([]);
-	const [, setIsHost] = useState(false);
+	const [isHost, setIsHost] = useState<string | null>(null);
 
 	const roomCode = window.location.pathname.split("/").pop();
 	const logger = new Logger(`client/room/${roomCode}`);
@@ -71,7 +71,7 @@ export default function Page() {
 			"check_if_allowed_in_game_response",
 			(data: {
 				allowedState: "not_allowed" | "allow_join" | "allow_register";
-				isHost?: boolean;
+				isHost?: string;
 				playersInLobby?: Player[];
 				toastMessage: string;
 			}) => {
@@ -93,7 +93,7 @@ export default function Page() {
 				}
 
 				// Is only defined if allowed
-				setIsHost(data.isHost || false);
+				setIsHost(data.isHost || null);
 
 				logger.log("check_if_allowed_in_game_response", data);
 			},
@@ -115,17 +115,23 @@ export default function Page() {
 			},
 		);
 
-		sockRef.on("player_joined_game_broadcast_all", (data: { player: Player, playersInLobby: Player[] }) => {
-			logger.log("Player joined game", data);
-			toast(`${data.player.name} has joined the game!`);
-			setPlayersInLobby(data.playersInLobby || []);
-		});
+		sockRef.on(
+			"player_joined_game_broadcast_all",
+			(data: { player: Player; playersInLobby: Player[] }) => {
+				logger.log("Player joined game", data);
+				toast(`${data.player.name} has joined the game!`);
+				setPlayersInLobby(data.playersInLobby || []);
+			},
+		);
 
-		sockRef.on("player_disconnected_broadcast_all", (data: { player: Player, playersInLobby: Player[] }) => {
-			logger.log("Player left game", data);
-			toast(`${data.player.name} has left the game!`);
-			setPlayersInLobby(data.playersInLobby || []);
-		});
+		sockRef.on(
+			"player_disconnected_broadcast_all",
+			(data: { player: Player; playersInLobby: Player[] }) => {
+				logger.log("Player left game", data);
+				toast(`${data.player.name} has left the game!`);
+				setPlayersInLobby(data.playersInLobby || []);
+			},
+		);
 
 		return () => {
 			logger.log("Cleaning up");
@@ -216,15 +222,12 @@ export default function Page() {
 								className="flex flex-row items-center justify-between w-full max-w-2xl p-4 border-b border-gray-300"
 							>
 								<p className="text-xl font-bold">{player.name}</p>
+								{isHost && player.id === isHost ? (
+									<span>{"(Host)"}</span>
+								) : null}
 							</div>
 						);
 					})}
-					{/* <Image
-          src="/images/odd-duck.png"
-          alt="Odd Duck"
-          width={500}
-          height={500}
-        /> */}
 				</div>
 			)}
 		</>

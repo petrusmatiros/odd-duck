@@ -67,7 +67,7 @@ export class RoomInstance {
 	getPlayers() {
 		return this.players;
 	}
-	isInPlayers(player: PlayerInstance) {
+	hasPlayer(player: PlayerInstance) {
 		return this.players.some((p) => p.getId() === player.getId());
 	}
 	setPlayers(newPlayers: PlayerInstance[]) {
@@ -85,7 +85,7 @@ export class RoomInstance {
 	getSpies() {
 		return this.spies;
 	}
-	isInSpies(player: PlayerInstance) {
+	hasSpy(player: PlayerInstance) {
 		return this.spies.some((spy) => spy.getId() === player.getId());
 	}
 	setSpies(newSpies: PlayerInstance[]) {
@@ -103,7 +103,7 @@ export class RoomInstance {
 	getCivilians() {
 		return this.civilians;
 	}
-	isInCivilians(player: PlayerInstance) {
+	hasCivilian(player: PlayerInstance) {
 		return this.civilians.some((civ) => civ.getId() === player.getId());
 	}
 	setCivilians(newCivilians: PlayerInstance[]) {
