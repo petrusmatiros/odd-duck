@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { WebsocketClient } from "../communication/WebsocketClient";
 import Popup from "../components/Popup/Popup";
@@ -21,6 +21,7 @@ const ODD_DUCK_IMAGE_ID = "odd-duck-image";
 
 export default function Index() {
 	const logger = new Logger("client/index");
+	const [hasPlayername, setHasPlayername] = useState(false);
 
 	const validatedWsClient = useRef<WebsocketClient>(
 		new WebsocketClient(
@@ -62,7 +63,9 @@ export default function Index() {
 			if (randomNum < ODD_DUCK_BLINK_CHANCE) {
 				newImage = closedEyesSrc;
 			}
-			const img = document.getElementById(ODD_DUCK_IMAGE_ID) as HTMLImageElement;
+			const img = document.getElementById(
+				ODD_DUCK_IMAGE_ID,
+			) as HTMLImageElement;
 			if (img) {
 				img.src = newImage;
 			}
@@ -109,11 +112,21 @@ export default function Index() {
 		);
 
 		sockRef.on(
-			"entered_game_response",
+			"check_if_already_created_game_before_response",
 			(data: { roomCode: string; toastMessage: string }) => {
 				logger.log("Entered game", data.roomCode);
 				toast(data.toastMessage);
 				window.location.href = `/room/${data.roomCode}`;
+			},
+		);
+
+		sockRef.on(
+			"check_if_player_name_exists_response",
+			(data: { name: string | null }) => {
+				if (data.name) {
+					logger.log("Player name exists", data.name);
+					setHasPlayername(true);
+				}
 			},
 		);
 
@@ -123,7 +136,7 @@ export default function Index() {
 			sockRef.off("disconnect");
 			sockRef.off("connect_error");
 			sockRef.off("register_new_player_token_response");
-			sockRef.off("entered_game_response");
+			sockRef.off("check_if_already_created_game_before_response");
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
@@ -198,105 +211,180 @@ export default function Index() {
 						}}
 					/>
 
-					<Popup
-						buttonTitle="Join Game"
-						triggerButtonClick={() => {
-							logger.log("Join game clicked");
-							// play sound
-							sound_quack.play();
-						}}
-						dialogTitle="Join Game"
-						dialogDescription="What be your name veary traveller? And what be the code to the room ye be joinin?"
-						submitButtonTitle="Join Game"
-						inputs={[
-							{
-								id: "name",
-								type: "text",
-								placeholder: "Name",
-								labelTitle: "Name",
-								required: true,
-								minLength: 1,
-								maxLength: 20,
-								className: "col-span-3",
-								onChange: (e) => {
-									// must be 6 characters long, most be upper case
-									const value = e.target.value.trim();
-									if (!value) {
-										return;
-									}
+					{hasPlayername ? (
+						<Popup
+							buttonTitle="Join Game"
+							triggerButtonClick={() => {
+								logger.log("Join game clicked");
+								validatedWsClient?.current?.socket.emit(
+									"check_if_player_name_exists",
+								);
+								// play sound
+								sound_quack.play();
+							}}
+							dialogTitle="Join Game"
+							dialogDescription="What be the code to the room ye be joinin?"
+							submitButtonTitle="Join Game"
+							inputs={[
+								{
+									id: "code",
+									type: "text",
+									placeholder: "Code",
+									labelTitle: "Code",
+									required: true,
+									minLength: 3,
+									maxLength: 20,
+									className: "col-span-3",
+									onChange: (e) => {
+										// must be 6 characters long, most be upper case
+										const value = e.target.value.trim();
+										if (!value) {
+											return;
+										}
+										const formattedValue = value.toUpperCase();
+										e.target.value = formattedValue;
 
-									if (value.length > 20) {
-										e.target.value = value.slice(0, 20);
-										return;
-									}
+										if (formattedValue.length > 6) {
+											e.target.value = formattedValue.slice(0, 6);
+											return;
+										}
 
-									const lowerBound = 1.75;
-									const upperBound = 2;
-									const randomNum = Math.random() + lowerBound;
-									sound_quack.rate(
-										randomNum < upperBound ? randomNum : lowerBound,
-									);
-									sound_quack.play();
+										const lowerBound = 1.75;
+										const upperBound = 2;
+										const randomNum = Math.random() + lowerBound;
+										sound_quack.rate(
+											randomNum < upperBound ? randomNum : lowerBound,
+										);
+										sound_quack.play();
+									},
 								},
-							},
-							{
-								id: "code",
-								type: "text",
-								placeholder: "Code",
-								labelTitle: "Code",
-								required: true,
-								minLength: 3,
-								maxLength: 20,
-								className: "col-span-3",
-								onChange: (e) => {
-									// must be 6 characters long, most be upper case
-									const value = e.target.value.trim();
-									if (!value) {
-										return;
-									}
-									const formattedValue = value.toUpperCase();
-									e.target.value = formattedValue;
+							]}
+							submitButtonOnClick={(e) => {
+								e.preventDefault();
+								const code = (
+									document.getElementById("code") as HTMLInputElement
+								).value;
 
-									if (formattedValue.length > 6) {
-										e.target.value = formattedValue.slice(0, 6);
-										return;
-									}
+								if (!code) {
+									return;
+								}
 
-									const lowerBound = 1.75;
-									const upperBound = 2;
-									const randomNum = Math.random() + lowerBound;
-									sound_quack.rate(
-										randomNum < upperBound ? randomNum : lowerBound,
-									);
-									sound_quack.play();
+								if (code.length !== 6) {
+									return;
+								}
+
+								validatedWsClient?.current?.socket.emit("join_game", {
+									name: null,
+									code: code,
+								});
+							}}
+						/>
+					) : (
+						<Popup
+							buttonTitle="Join Game"
+							triggerButtonClick={() => {
+								logger.log("Join game clicked");
+								validatedWsClient?.current?.socket.emit(
+									"check_if_player_name_exists",
+								);
+								// play sound
+								sound_quack.play();
+							}}
+							dialogTitle="Join Game"
+							dialogDescription="What be your name veary traveller? And what be the code to the room ye be joinin?"
+							submitButtonTitle="Join Game"
+							inputs={[
+								{
+									id: "name",
+									type: "text",
+									placeholder: "Name",
+									labelTitle: "Name",
+									required: true,
+									minLength: 1,
+									maxLength: 20,
+									className: "col-span-3",
+									onChange: (e) => {
+										// must be 6 characters long, most be upper case
+										const value = e.target.value.trim();
+										if (!value) {
+											return;
+										}
+
+										if (value.length > 20) {
+											e.target.value = value.slice(0, 20);
+											return;
+										}
+
+										const lowerBound = 1.75;
+										const upperBound = 2;
+										const randomNum = Math.random() + lowerBound;
+										sound_quack.rate(
+											randomNum < upperBound ? randomNum : lowerBound,
+										);
+										sound_quack.play();
+									},
 								},
-							},
-						]}
-						submitButtonOnClick={(e) => {
-							e.preventDefault();
-							const name = (document.getElementById("name") as HTMLInputElement)
-								.value;
-							const code = (document.getElementById("code") as HTMLInputElement)
-								.value;
+								{
+									id: "code",
+									type: "text",
+									placeholder: "Code",
+									labelTitle: "Code",
+									required: true,
+									minLength: 3,
+									maxLength: 20,
+									className: "col-span-3",
+									onChange: (e) => {
+										// must be 6 characters long, most be upper case
+										const value = e.target.value.trim();
+										if (!value) {
+											return;
+										}
+										const formattedValue = value.toUpperCase();
+										e.target.value = formattedValue;
 
-							if (!name || !code) {
-								return;
-							}
+										if (formattedValue.length > 6) {
+											e.target.value = formattedValue.slice(0, 6);
+											return;
+										}
 
-							if (name.length < 1 || name.length > 20) {
-								return;
-							}
+										const lowerBound = 1.75;
+										const upperBound = 2;
+										const randomNum = Math.random() + lowerBound;
+										sound_quack.rate(
+											randomNum < upperBound ? randomNum : lowerBound,
+										);
+										sound_quack.play();
+									},
+								},
+							]}
+							submitButtonOnClick={(e) => {
+								e.preventDefault();
+								const name = (
+									document.getElementById("name") as HTMLInputElement
+								).value;
+								const code = (
+									document.getElementById("code") as HTMLInputElement
+								).value;
 
-							if (code.length !== 6) {
-								return;
-							}
+								if (!name || !code) {
+									return;
+								}
 
-							validatedWsClient?.current?.socket.emit("join_game", {
-								name: name,
-								code: code,
-							});
-						}}
-					/>
+								if (name.length < 1 || name.length > 20) {
+									return;
+								}
+
+								if (code.length !== 6) {
+									return;
+								}
+
+								validatedWsClient?.current?.socket.emit("join_game", {
+									name: name,
+									code: code,
+								});
+							}}
+						/>
+					)}
 				</div>
 			</div>
 		</>

@@ -269,7 +269,7 @@ validatedNamespace.on("connection", (socket) => {
 				// Let socket join the room
 				socket.join(room.getId());
 
-				socket.emit("entered_game_response", {
+				socket.emit("check_if_already_created_game_before_response", {
 					roomCode: room.getId(),
 					toastMessage: "You are already a host of a room",
 				});
@@ -277,6 +277,44 @@ validatedNamespace.on("connection", (socket) => {
 			}
 		}
 		return;
+	});
+
+	/**
+	 * check_if_player_name_exists
+	 * This event is fired when the client emits a check_if_player_name_exists event.
+	 */
+	socket.on("check_if_player_name_exists", () => {
+		const token = socket.handshake.auth.token;
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			event: "check_if_player_name_exists",
+			namespace: validatedNamespaceConstant,
+			message: "Check if player name exists",
+			data: {
+				token: token,
+			},
+		});
+
+		// Check if player already exists
+		const player = playersRegistry.get(token);
+		if (!player) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "check_if_player_name_exists",
+				namespace: validatedNamespaceConstant,
+				message: "No player instance found for token",
+				data: {
+					token: token,
+				},
+			});
+			return;
+		}
+
+		socket.emit("check_if_player_name_exists_response", {
+			name: player.getName() ? player.getName() : null,
+		});
 	});
 
 	/**
@@ -375,7 +413,7 @@ validatedNamespace.on("connection", (socket) => {
 	 * join_game
 	 * This event is fired when the client emits a join_game event.
 	 */
-	socket.on("join_game", (data: { name: string; code: string }) => {
+	socket.on("join_game", (data: { name: string | null; code: string }) => {
 		const token = socket.handshake.auth.token;
 		logger.log({
 			socketId: socket.id,
@@ -415,7 +453,19 @@ validatedNamespace.on("connection", (socket) => {
 		}
 
 		// Set player name
-		player.setName(data.name);
+		// Ensure that if player already has a name, null will be passed
+		if (data.name) {
+			// If the player does not have a name, set it to the provided name
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "join_game",
+				namespace: validatedNamespaceConstant,
+				message: "Setting player name for player instance",
+				data: data,
+			});
+			player.setName(data.name);
+		}
 
 		// Check if player is already in the room
 		if (room.isInPlayers(player)) {
@@ -467,13 +517,15 @@ validatedNamespace.on("connection", (socket) => {
 		});
 
 		// Send to all players in the room
-		validatedNamespace.to(room.getId()).emit("player_joined_game_broadcast_all", {
-			player: {
-				id: player.getId(),
-				name: player.getName(),
-			},
-			playersInLobby: room.getPlayers(),
-		});
+		validatedNamespace
+			.to(room.getId())
+			.emit("player_joined_game_broadcast_all", {
+				player: {
+					id: player.getId(),
+					name: player.getName(),
+				},
+				playersInLobby: room.getPlayers(),
+			});
 	});
 
 	/**
