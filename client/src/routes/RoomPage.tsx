@@ -133,8 +133,10 @@ export default function Page() {
 			sockRef.off("disconnect");
 			sockRef.off("connect_error");
 			sockRef.off("check_if_allowed_in_game_response");
+			sockRef.off("direct_join_game_response");
 			sockRef.off("register_new_player_token_response");
 			sockRef.off("player_joined_game_broadcast_all");
+			sockRef.off("player_disconnected_broadcast_all");
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [roomCode]);
