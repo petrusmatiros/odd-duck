@@ -640,14 +640,6 @@ validatedNamespace.on("connection", (socket) => {
 			logger.log(room.getPlayers());
 			logger.log(room.getHost());
 
-			socket.broadcast.to(room.getId()).emit("player_joined_game_broadcast_all", {
-				player: {
-					id: player.getId(),
-					name: player.getName(),
-				},
-				playersInLobby: room.getPlayers(),
-			});
-
 			// Send to all players in the room
 			validatedNamespace
 				.to(room.getId())
@@ -657,8 +649,8 @@ validatedNamespace.on("connection", (socket) => {
 						name: player.getName(),
 					},
 					playersInLobby: room.getPlayers(),
-				});
-
+				});	
+				
 			return;
 		}
 	});

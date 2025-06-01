@@ -105,6 +105,14 @@ export default function Popup({
 									padding: "0.5rem",
 									backgroundColor: hsl(255, 255, 255, 100),
 								}}
+								onKeyDown={(e) => {
+									if (e.key === "Enter") {
+										e.preventDefault();
+										submitButtonOnClick?.(
+											e as unknown as React.MouseEvent<HTMLButtonElement, MouseEvent>,
+										);
+									}
+								}}
 							/>
 						</div>
 					))}
