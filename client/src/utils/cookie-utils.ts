@@ -1,13 +1,14 @@
 export function getCookie(key: string): string | null {
 	if (!key) return null;
 
+	// Array of cookie strings
 	const cookies = document.cookie ? document.cookie.split("; ") : [];
-	console.log("Cookies", cookies);
 
 	for (let i = 0; i < cookies.length; i++) {
 		const cookie = cookies[i];
 
 		if (!cookie) continue;
+		// Cookie pair is in the format "key=value"
 		const [cookieKey, cookieValue] = cookie.split("=");
 		if (!cookieKey) continue;
 		if (cookieKey === key) {
@@ -48,7 +49,7 @@ export function setCookie(
 		}
 
 		if (options?.path) {
-			cookieStringBuilder.push(`Path=${options.path || "/"};`);
+			cookieStringBuilder.push(`Path=${options.path};`);
 		}
 
     // Set the cookie

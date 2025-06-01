@@ -11,13 +11,10 @@ export default function Index() {
 
 	const logger = new Logger("client/index");
 
-	const theCookie = (getCookie("token") as string) || ""
-	console.log("Cookie token", theCookie);
-
 	const validatedWsClient = useRef<WebsocketClient>(
 		new WebsocketClient(
 			`${import.meta.env.VITE_WS_SERVER_URL}/${import.meta.env.VITE_WS_VALIDATED_NAMESPACE}`,
-			theCookie,
+			(getCookie("token") as string) || "",
 		),
 	);
 
