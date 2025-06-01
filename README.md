@@ -29,5 +29,5 @@ npm i
 ```txt
 shadcn
 howler
-socket.io
+socket.io-client
 ```
