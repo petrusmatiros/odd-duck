@@ -2,13 +2,16 @@ export function getCookie(key: string): string | null {
 	if (!key) return null;
 
 	const cookies = document.cookie ? document.cookie.split("; ") : [];
+	console.log("Cookies", cookies);
 
 	for (let i = 0; i < cookies.length; i++) {
 		const cookie = cookies[i];
 
 		if (!cookie) continue;
-		if (cookie === key) {
-			return cookie.split("=")[1];
+		const [cookieKey, cookieValue] = cookie.split("=");
+		if (!cookieKey) continue;
+		if (cookieKey === key) {
+			return cookieValue;
 		}
 	}
 	return null;
