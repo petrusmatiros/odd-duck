@@ -26,7 +26,7 @@ npm i
 ```
 
 ### Dependencies
-```json
+```txt
 shadcn
 howler
 socket.io
