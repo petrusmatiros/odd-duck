@@ -148,31 +148,9 @@ export default function Page() {
 
 	return (
 		<>
-			{isAllowedInRoom && hasJoinedRoom ? (
-				<div className="flex flex-col items-center justify-center min-h-screen">
-					<h1 className="text-4xl font-bold">Odd Duck</h1>
-					<p className="text-2xl font-bold">Room Code: {roomCode}</p>
-					{playersInLobby?.map((player) => {
-						console.log("Player", player);
-						return (
-							<div
-								key={player.id}
-								className="flex flex-row items-center justify-between w-full max-w-2xl p-4 border-b border-gray-300"
-							>
-								<p className="text-xl font-bold">{player.name}</p>
-							</div>
-						);
-					})}
-					{/* <Image
-          src="/images/odd-duck.png"
-          alt="Odd Duck"
-          width={500}
-          height={500}
-        /> */}
-				</div>
-			) : (
+			{isAllowedInRoom && !hasJoinedRoom ? (
 				<Popup
-					open={!isAllowedInRoom}
+					open={isAllowedInRoom && !hasJoinedRoom}
 					withoutTriggerButton
 					dialogTitle="Join Game"
 					dialogDescription="What be your name veary traveller?"
@@ -224,6 +202,28 @@ export default function Page() {
 						});
 					}}
 				/>
+			) : (
+				<div className="flex flex-col items-center justify-center min-h-screen">
+					<h1 className="text-4xl font-bold">Odd Duck</h1>
+					<p className="text-2xl font-bold">Room Code: {roomCode}</p>
+					{playersInLobby?.map((player) => {
+						console.log("Player", player);
+						return (
+							<div
+								key={player.id}
+								className="flex flex-row items-center justify-between w-full max-w-2xl p-4 border-b border-gray-300"
+							>
+								<p className="text-xl font-bold">{player.name}</p>
+							</div>
+						);
+					})}
+					{/* <Image
+          src="/images/odd-duck.png"
+          alt="Odd Duck"
+          width={500}
+          height={500}
+        /> */}
+				</div>
 			)}
 		</>
 	);
