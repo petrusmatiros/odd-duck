@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { WebsocketClient } from "../communication/WebsocketClient";
 import Popup from "../components/Popup/Popup";
-import { getCookie } from "../utils/cookie-utils";
+import { getCookie, setCookie } from "../utils/cookie-utils";
 import { Logger } from "../utils/log-utils";
 
 interface Player {
@@ -52,6 +52,18 @@ export default function Page() {
 		});
 
 		sockRef.on(
+			"register_new_player_token_response",
+			(data: { token: string }) => {
+				logger.log("Register new player token", data.token);
+				setCookie("token", data.token, {
+					sameSite: "Strict",
+					secure: true,
+					maxAge: 60 * 60 * 24, // 1 day
+				});
+			},
+		);
+
+		sockRef.on(
 			"check_if_allowed_in_game_response",
 			(data: {
 				allowedState: "not_allowed" | "allow_join" | "allow_register";
@@ -99,31 +111,25 @@ export default function Page() {
 			},
 		);
 
-		sockRef.on(
-			"player_joined_game_broadcast_all",
-			(data: Player) => {
-				logger.log("Player joined game", data);
-				toast(`${data.name} has joined the game!`);
-				setPlayersInLobby((prev) => {
-					if (!prev) {
-						return [];
-					}
-					return [...prev, data];
-				});
-			},
-		);
+		sockRef.on("player_joined_game_broadcast_all", (data: Player) => {
+			logger.log("Player joined game", data);
+			toast(`${data.name} has joined the game!`);
+			setPlayersInLobby((prev) => {
+				if (!prev) {
+					return [];
+				}
+				return [...prev, data];
+			});
+		});
 
 		return () => {
 			logger.log("Cleaning up");
 			sockRef.off("connect");
 			sockRef.off("disconnect");
 			sockRef.off("connect_error");
-			sockRef.off(
-				"check_if_allowed_in_game_response",
-			);
-			sockRef.off(
-				"player_joined_game_broadcast_all",
-			);
+			sockRef.off("check_if_allowed_in_game_response");
+			sockRef.off("register_new_player_token_response");
+			sockRef.off("player_joined_game_broadcast_all");
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [roomCode]);

@@ -22,7 +22,9 @@ export function setCookie(
 		sameSite?: "Strict" | "Lax" | "None";
 		maxAge?: number;
 		path?: string;
-	} = {},
+	} = {
+		path: "/",
+	},
 ): void {
 		if (!key || !value) return;
 
