@@ -1,10 +1,9 @@
 export class PlayerInstance {
   id: string;
-  name: string | null;  
+  name: string | null = null;  
 
-  constructor(name: string | null) {
+  constructor() {
     this.id = crypto.randomUUID();
-    this.name = name;
   }
   getId() {
     return this.id;

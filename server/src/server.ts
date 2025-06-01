@@ -99,6 +99,7 @@ function onConnectionHelper(socket: Socket) {
 		message: "a user connected",
 	});
 
+
 	// Retrieve token and check if player exists (should be done in middleware)
 	const token = socket.handshake.auth.token;
 
@@ -122,7 +123,7 @@ function onConnectionHelper(socket: Socket) {
 			event: "connection_helper",
 			message: "Creating new player instance",
 		});
-		const newPlayer = new PlayerInstance(newUUID);
+		const newPlayer = new PlayerInstance();
 		playersRegistry.set(newUUID, newPlayer);
 		// !IMPORTANT, we must assign, so each successive events can use the same token
 		socket.handshake.auth.token = newUUID;
@@ -442,7 +443,7 @@ validatedNamespace.on("connection", (socket) => {
 				message: "No player instance found for token",
 			});
 		
-			const newPlayer = new PlayerInstance(token);
+			const newPlayer = new PlayerInstance();
 			playersRegistry.set(token, newPlayer);
 
 			newPlayer.setName(data.name);
@@ -508,16 +509,17 @@ validatedNamespace.on("connection", (socket) => {
 			});
 			return;
 		}
-		// Check if player already exists
+		// Check if player already exists, but has no name
+		// The current setup will make it so the player is created before this, so there will always be a player instance
 		const player = playersRegistry.get(token);
-		if (!player) {
+		if (!player?.getName()) {
 			logger.log({
 				socketId: socket.id,
 				token: token,
 				event: "check_if_allowed_in_game",
 				namespace: validatedNamespaceConstant,
 				message:
-					"Socket is attempting direct join, since player is not in registry",
+					"Socket is attempting direct join. Player exists but has no name",
 			});
 			socket.emit("check_if_allowed_in_game_response", {
 				allowedState: "allow_register",

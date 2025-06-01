@@ -1,29 +1,30 @@
 {
-  "name": "odd-duck-server",
-  "version": "1.0.0",
-  "main": "server.ts",
-  "private": true,
-  "scripts": {
-    "start": "tsx src/server.ts",
-    "dev": "tsx watch src/server.ts"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "crypto-random-string": "^5.0.0",
-    "dotenv": "^16.5.0",
-    "express": "^5.1.0",
-    "express-session": "^1.18.1",
-    "helmet": "^8.1.0",
-    "helmet-csp": "^4.0.0",
-    "socket.io": "^4.8.1",
-    "yoctocolors": "^2.1.1"
-  },
-  "devDependencies": {
-    "@types/node": "^22.14.1",
-    "tsx": "^4.19.3"
-  }
+	"name": "odd-duck-server",
+	"version": "1.0.0",
+	"main": "server.ts",
+	"private": true,
+	"scripts": {
+		"start": "tsx src/server.ts",
+		"dev": "tsx watch src/server.ts",
+		"rebuild": "cd ../client && npm run build && cd ../server && npm run dev"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"description": "",
+	"dependencies": {
+		"cors": "^2.8.5",
+		"crypto-random-string": "^5.0.0",
+		"dotenv": "^16.5.0",
+		"express": "^5.1.0",
+		"express-session": "^1.18.1",
+		"helmet": "^8.1.0",
+		"helmet-csp": "^4.0.0",
+		"socket.io": "^4.8.1",
+		"yoctocolors": "^2.1.1"
+	},
+	"devDependencies": {
+		"@types/node": "^22.14.1",
+		"tsx": "^4.19.3"
+	}
 }
