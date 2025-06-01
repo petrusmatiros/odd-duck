@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { WebsocketClient } from "../communication/WebsocketClient";
 import Popup from "../components/Popup/Popup";
-import { getCookie, setCookie } from "../utils/cookie-utils";
+import {
+	defaultCookieOptions,
+	getCookie,
+	setCookie,
+} from "../utils/cookie-utils";
 import { Logger } from "../utils/log-utils";
 
 interface Player {
@@ -55,11 +59,10 @@ export default function Page() {
 			"register_new_player_token_response",
 			(data: { token: string }) => {
 				logger.log("Register new player token", data.token);
-				setCookie("token", data.token, {
-					sameSite: "Strict",
-					secure: true,
-					maxAge: 60 * 60 * 24, // 1 day
-					path: "/",
+				setCookie({
+					key: "token",
+					value: data.token,
+					options: defaultCookieOptions,
 				});
 			},
 		);

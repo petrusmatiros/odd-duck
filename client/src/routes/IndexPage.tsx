@@ -2,13 +2,24 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { WebsocketClient } from "../communication/WebsocketClient";
 import Popup from "../components/Popup/Popup";
-import { getCookie, setCookie } from "../utils/cookie-utils";
+import {
+	defaultCookieOptions,
+	getCookie,
+	setCookie,
+} from "../utils/cookie-utils";
 import { Logger } from "../utils/log-utils";
 import { Howl } from "howler";
 
+const ODD_DUCK_IMAE_INTERVAL = 5000; // 5 seconds
+const ODD_DUCK_IMAGE_SWITCH_DELAY = 250; // 0.25 seconds
+const ODD_DUCK_BLINK_CHANCE = 0.45; // 45% chance to blink
+const ODD_DUCK_OPEN_EYES_SRC = "avatars/odd_duck_open.webp";
+const ODD_DUCK_CLOSED_EYES_SRC = "avatars/odd_duck_closed.webp";
+const ODD_DUCK_SOUND_SRC = "quack.mp3";
+const ODD_DUCK_THEME_SRC = "odd_duck_theme.mp3";
+const ODD_DUCK_IMAGE_ID = "odd-duck-image";
 
 export default function Index() {
-
 	const logger = new Logger("client/index");
 
 	const validatedWsClient = useRef<WebsocketClient>(
@@ -19,14 +30,14 @@ export default function Index() {
 	);
 
 	const sound_quack = new Howl({
-		src: ["quack.mp3"],
+		src: [ODD_DUCK_SOUND_SRC],
 		volume: 0.3,
 		loop: false,
 	});
 
 	useEffect(() => {
 		const sound_theme = new Howl({
-			src: ["odd_duck_theme.mp3"],
+			src: [ODD_DUCK_THEME_SRC],
 			volume: 0.3,
 			loop: true,
 		});
@@ -42,18 +53,16 @@ export default function Index() {
 			console.log("Finished!");
 		});
 		const interval = setInterval(() => {
-			const openEyesSrc = "avatars/odd_duck_open.webp";
-			const closedEyesSrc = "avatars/odd_duck_closed.webp";
+			const openEyesSrc = ODD_DUCK_OPEN_EYES_SRC;
+			const closedEyesSrc = ODD_DUCK_CLOSED_EYES_SRC;
 
 			// open eyes should always be, but every 5 seconds, should be 30% chance to be closed, then quickly open again
 			const randomNum = Math.random();
 			let newImage = openEyesSrc;
-			if (randomNum < 0.45) {
+			if (randomNum < ODD_DUCK_BLINK_CHANCE) {
 				newImage = closedEyesSrc;
 			}
-			const img = document.getElementById(
-				"odd-duck-image",
-			) as HTMLImageElement;
+			const img = document.getElementById(ODD_DUCK_IMAGE_ID) as HTMLImageElement;
 			if (img) {
 				img.src = newImage;
 			}
@@ -62,8 +71,8 @@ export default function Index() {
 				if (img) {
 					img.src = openEyesSrc;
 				}
-			}, 250);
-		}, 5000);
+			}, ODD_DUCK_IMAGE_SWITCH_DELAY);
+		}, ODD_DUCK_IMAE_INTERVAL);
 		return () => {
 			clearInterval(interval);
 			sound_theme.stop();
@@ -91,11 +100,10 @@ export default function Index() {
 			"register_new_player_token_response",
 			(data: { token: string }) => {
 				logger.log("Register new player token", data.token);
-				setCookie("token", data.token, {
-					sameSite: "Strict",
-					secure: true,
-					maxAge: 60 * 60 * 24, // 1 day
-					path: "/",
+				setCookie({
+					key: "token",
+					value: data.token,
+					options: defaultCookieOptions,
 				});
 			},
 		);
@@ -125,8 +133,8 @@ export default function Index() {
 			<div className="flex flex-col items-center justify-center min-h-screen">
 				<h1 className="text-4xl font-bold">Odd Duck</h1>
 				<img
-					id="odd-duck-image"
-					src={"avatars/odd_duck_open.webp"}
+					id={ODD_DUCK_IMAGE_ID}
+					src={ODD_DUCK_OPEN_EYES_SRC}
 					alt="Odd Duck"
 					width={200}
 					height={200}
@@ -159,7 +167,9 @@ export default function Index() {
 									const lowerBound = 1.75;
 									const upperBound = 2;
 									const randomNum = Math.random() + lowerBound;
-									sound_quack.rate(randomNum < upperBound ? randomNum : lowerBound);
+									sound_quack.rate(
+										randomNum < upperBound ? randomNum : lowerBound,
+									);
 									sound_quack.play();
 								},
 							},
@@ -223,7 +233,9 @@ export default function Index() {
 									const lowerBound = 1.75;
 									const upperBound = 2;
 									const randomNum = Math.random() + lowerBound;
-									sound_quack.rate(randomNum < upperBound ? randomNum : lowerBound);
+									sound_quack.rate(
+										randomNum < upperBound ? randomNum : lowerBound,
+									);
 									sound_quack.play();
 								},
 							},
@@ -253,7 +265,9 @@ export default function Index() {
 									const lowerBound = 1.75;
 									const upperBound = 2;
 									const randomNum = Math.random() + lowerBound;
-									sound_quack.rate(randomNum < upperBound ? randomNum : lowerBound);
+									sound_quack.rate(
+										randomNum < upperBound ? randomNum : lowerBound,
+									);
 									sound_quack.play();
 								},
 							},
