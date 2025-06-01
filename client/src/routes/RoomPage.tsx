@@ -59,6 +59,7 @@ export default function Page() {
 					sameSite: "Strict",
 					secure: true,
 					maxAge: 60 * 60 * 24, // 1 day
+					path: "/",
 				});
 			},
 		);

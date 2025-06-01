@@ -22,30 +22,32 @@ export function setCookie(
 		sameSite?: "Strict" | "Lax" | "None";
 		maxAge?: number;
 		path?: string;
-	} = {
-		path: "/",
-	},
+	} = {},
 ): void {
 		if (!key || !value) return;
 
-		let cookieString = `${key}=${value};`;
+		const cookieStringBuilder: string[] = [];
+
+		// Ensure the key and value are properly encoded
+		const cookieString = `${key}=${value};`;
+		cookieStringBuilder.push(cookieString);
 
 		if (options?.secure) {
-			cookieString += "secure;";
+			cookieStringBuilder.push("Secure;");
 		}
 
 		if (options?.sameSite) {
-			cookieString += `SameSite=${options.sameSite};`;
+			cookieStringBuilder.push(`SameSite=${options.sameSite};`);
 		}
 
 		if (options?.maxAge) {
-			cookieString += `Max-Age=${options.maxAge};`;
+			cookieStringBuilder.push(`Max-Age=${options.maxAge};`);
 		}
 
 		if (options?.path) {
-			cookieString += `Path=${options.path};`;
+			cookieStringBuilder.push(`Path=${options.path || "/"};`);
 		}
 
     // Set the cookie
-		document.cookie = cookieString;
+		document.cookie = cookieStringBuilder.join(" ").trim();
 	}
