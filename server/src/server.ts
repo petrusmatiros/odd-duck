@@ -722,6 +722,15 @@ validatedNamespace.on("connection", (socket) => {
 				toastMessage: "You can join - welcome back, host!",
 			});
 
+			socket.emit("player_joined_game_broadcast_all", {
+				player: {
+					id: player.getId(),
+					name: player.getName(),
+				},
+				playersInLobby: room.getPlayers(),
+			});
+
+			// Send to all players in the room
 			validatedNamespace
 				.to(room.getId())
 				.emit("player_joined_game_broadcast_all", {

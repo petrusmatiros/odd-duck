@@ -137,6 +137,7 @@ export default function Index() {
 			sockRef.off("connect_error");
 			sockRef.off("register_new_player_token_response");
 			sockRef.off("check_if_already_created_game_before_response");
+			sockRef.off("check_if_player_name_exists_response");
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
