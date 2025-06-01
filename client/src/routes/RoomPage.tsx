@@ -67,6 +67,11 @@ export default function Page() {
 			},
 		);
 
+		sockRef.on("test", (data: { message: string }) => {
+			logger.log("Test event received", data);
+			toast(data.message);
+		});
+
 		sockRef.on(
 			"check_if_allowed_in_game_response",
 			(data: {

@@ -179,8 +179,32 @@ function rejoinRoomsHelper(socket: Socket) {
 		return;
 	}
 
+	// Join the player's own room⁄
+	socket.join(player.getId());
+
 	for (const room of roomsRegistry.values()) {
-		if (room.hasPlayer(player) && !socket.rooms.has(room.getId())) {
+		/**
+		 * !IMPORTANT:
+		 * When a host creates a game, and go to /room from the index page - the socket disconnects.
+		 * This make the socket leave it's rooms
+		 * Two cases:
+		 * 1. Player is not in room. but is host of room, has to rejoin
+		 * 2. Player is already in room, has to rejoin
+		 */
+		// Not in the room, but is host of the room
+		if (!room.hasPlayer(player) && room.getHost().getId() === player.getId()) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				namespace: validatedNamespaceConstant,
+				event: "rejoin_rooms_helper",
+				message: "Rejoining room as host",
+				data: room.getId(),
+			});
+			socket.join(room.getId());
+		}
+		// Player is already in the room
+		if (room.hasPlayer(player)) {
 			logger.log({
 				socketId: socket.id,
 				token: token,
@@ -640,6 +664,10 @@ validatedNamespace.on("connection", (socket) => {
 			logger.log(room.getPlayers());
 			logger.log(room.getHost());
 
+			validatedNamespace.to(room.getHost().getId()).emit("test", {
+				message: "Broadcasting to all players in room",
+			});
+
 			// Send to all players in the room
 			validatedNamespace
 				.to(room.getId())
@@ -649,8 +677,8 @@ validatedNamespace.on("connection", (socket) => {
 						name: player.getName(),
 					},
 					playersInLobby: room.getPlayers(),
-				});	
-				
+				});
+
 			return;
 		}
 	});
