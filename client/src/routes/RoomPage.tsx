@@ -77,7 +77,7 @@ export default function Page() {
 			"check_if_allowed_in_game_response",
 			(data: {
 				allowedState: "not_allowed" | "allow_join" | "allow_register";
-				isHost?: string;
+				isHost: string;
 				playersInLobby?: Player[];
 				toastMessage: string;
 			}) => {

@@ -721,6 +721,7 @@ validatedNamespace.on("connection", (socket) => {
 			});
 			socket.emit("check_if_allowed_in_game_response", {
 				allowedState: "allow_register",
+				isHost: room.getHost().getId(),
 				toastMessage:
 					"You are allowed to join the game, but you need a name first",
 			});
@@ -816,6 +817,7 @@ validatedNamespace.on("connection", (socket) => {
 			socket.emit("check_if_allowed_in_game_response", {
 				allowedState: "allow_join",
 				playersInLobby: room.getPlayers(),
+				isHost: room.getHost().getId(),
 				toastMessage: `Joined room ${data.code}`,
 			});
 
@@ -847,6 +849,7 @@ validatedNamespace.on("connection", (socket) => {
 		socket.emit("check_if_allowed_in_game_response", {
 			allowedState: "allow_join",
 			playersInLobby: room.getPlayers(),
+			isHost: room.getHost().getId(),
 			toastMessage: `You are already in the room ${data.code}`,
 		});
 
