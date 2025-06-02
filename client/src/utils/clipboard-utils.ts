@@ -4,14 +4,19 @@ export async function copyToClipboard(text: string): Promise<void> {
 		return;
 	}
 
+	if (!document.hasFocus()) {
+		console.warn("Document is not focused. Clipboard access denied.");
+		return;
+	}
+
 	try {
 		navigator.clipboard
 			.writeText(text)
 			.then(() => {})
 			.catch((err) => {
-				console.error("Failed to write to clipboard:", err);
+				console.warn("Failed to write to clipboard:", err);
 			});
 	} catch (err) {
-		console.error("Failed to copy text to clipboard:", err);
+		console.warn("Failed to copy text to clipboard:", err);
 	}
 }

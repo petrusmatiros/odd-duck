@@ -9,15 +9,9 @@ import {
 } from "../utils/cookie-utils";
 import { Logger } from "../utils/log-utils";
 import { Howl } from "howler";
-
-const ODD_DUCK_IMAE_INTERVAL = 5000; // 5 seconds
-const ODD_DUCK_IMAGE_SWITCH_DELAY = 250; // 0.25 seconds
-const ODD_DUCK_BLINK_CHANCE = 0.45; // 45% chance to blink
-const ODD_DUCK_OPEN_EYES_SRC = "/avatars/odd_duck_open.webp";
-const ODD_DUCK_CLOSED_EYES_SRC = "/avatars/odd_duck_closed.webp";
-const ODD_DUCK_SOUND_SRC = "quack.mp3";
-const ODD_DUCK_THEME_SRC = "odd_duck_theme.mp3";
-const ODD_DUCK_IMAGE_ID = "odd-duck-image";
+import {
+	BASE_CONFIG
+} from "@/config/config";
 
 export default function Index() {
 	const logger = new Logger("client/index");
@@ -31,14 +25,14 @@ export default function Index() {
 	);
 
 	const sound_quack = new Howl({
-		src: [ODD_DUCK_SOUND_SRC],
+		src: [BASE_CONFIG.ODD_DUCK_SOUND_SRC],
 		volume: 0.3,
 		loop: false,
 	});
 
 	useEffect(() => {
 		const sound_theme = new Howl({
-			src: [ODD_DUCK_THEME_SRC],
+			src: [BASE_CONFIG.ODD_DUCK_THEME_SRC],
 			volume: 0.3,
 			loop: true,
 		});
@@ -54,17 +48,17 @@ export default function Index() {
 			console.log("Finished!");
 		});
 		const interval = setInterval(() => {
-			const openEyesSrc = ODD_DUCK_OPEN_EYES_SRC;
-			const closedEyesSrc = ODD_DUCK_CLOSED_EYES_SRC;
+			const openEyesSrc = BASE_CONFIG.ODD_DUCK_OPEN_EYES_SRC;
+			const closedEyesSrc = BASE_CONFIG.ODD_DUCK_CLOSED_EYES_SRC;
 
 			// open eyes should always be, but every 5 seconds, should be 30% chance to be closed, then quickly open again
 			const randomNum = Math.random();
 			let newImage = openEyesSrc;
-			if (randomNum < ODD_DUCK_BLINK_CHANCE) {
+			if (randomNum < BASE_CONFIG.ODD_DUCK_BLINK_CHANCE) {
 				newImage = closedEyesSrc;
 			}
 			const img = document.getElementById(
-				ODD_DUCK_IMAGE_ID,
+				BASE_CONFIG.ODD_DUCK_IMAGE_ID,
 			) as HTMLImageElement;
 			if (img) {
 				img.src = newImage;
@@ -74,8 +68,8 @@ export default function Index() {
 				if (img) {
 					img.src = openEyesSrc;
 				}
-			}, ODD_DUCK_IMAGE_SWITCH_DELAY);
-		}, ODD_DUCK_IMAE_INTERVAL);
+			}, BASE_CONFIG.ODD_DUCK_IMAGE_SWITCH_DELAY);
+		}, BASE_CONFIG.ODD_DUCK_IMAE_INTERVAL);
 		return () => {
 			clearInterval(interval);
 			sound_theme.stop();
@@ -147,8 +141,8 @@ export default function Index() {
 			<div className="flex flex-col items-center justify-center min-h-screen">
 				<h1 className="text-4xl font-bold">Odd Duck</h1>
 				<img
-					id={ODD_DUCK_IMAGE_ID}
-					src={ODD_DUCK_OPEN_EYES_SRC}
+					id={BASE_CONFIG.ODD_DUCK_IMAGE_ID}
+					src={BASE_CONFIG.ODD_DUCK_OPEN_EYES_SRC}
 					alt="Odd Duck"
 					width={200}
 					height={200}

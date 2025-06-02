@@ -872,8 +872,6 @@ validatedNamespace.on("connection", (socket) => {
 	 */
 	socket.on("disconnect", () => {
 		const token = socket.handshake.auth.token;
-		socket.handshake.auth.token = null; // Clear the token to prevent reuse
-		logger.log("socket id", socket.id);
 		// socket.rooms.size === 0 here
 
 		// Check if the player is a valid player
@@ -928,6 +926,24 @@ validatedNamespace.on("connection", (socket) => {
 			message: "user disconnected",
 		});
 
-		console.log("===DISCONNECTED===");
+		/**
+		 * !IMPORTANT, We do this, since the disconnect event is triggered 4 times (unknown reason).
+		 * There are still sockets with the same token, so we need to clean them up.
+		 */
+		// Find all sockets that contain the same token
+		const socketValues = Array.from(validatedNamespace.sockets.values());
+		const socketsWithToken = socketValues?.filter(
+			(sock) => sock.handshake.auth.token === token,
+		);
+		// No cleanup needed if no sockets with the token
+		if (socketsWithToken.length === 0) {
+			logger.info("===DISCONNECTED===");
+			return;
+		}
+		// Cleanup needed if there are sockets with the token
+		for (const sock of socketsWithToken) {
+			sock.handshake.auth.token = null;
+		}
+		logger.info("===DISCONNECTED WITH CLEANUP===");
 	});
 });

@@ -19,7 +19,7 @@ export default function Page() {
 	const [isAllowedInRoom, setIsAllowedInRoom] = useState(false);
 	const [hasJoinedRoom, setHasJoinedRoom] = useState(false);
 	const [playersInLobby, setPlayersInLobby] = useState<Player[]>([]);
-	const [isHost, setIsHost] = useState<string | null>(null);
+	const [isHost, setIsHost] = useState<string | null>(null);
 
 	const roomCode = window.location.pathname.split("/").pop();
 	const logger = new Logger(`client/room/${roomCode}`);
@@ -134,6 +134,7 @@ export default function Page() {
 			"player_disconnected_broadcast_all",
 			(data: { player: Player; playersInLobby: Player[] }) => {
 				logger.log("Player left game", data);
+				toast(`${data.player.name} has left the game!`);
 				setPlayersInLobby(data.playersInLobby || []);
 			},
 		);
