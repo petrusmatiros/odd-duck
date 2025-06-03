@@ -2,6 +2,7 @@ import cryptoRandomString from "crypto-random-string";
 import { TimerInstance } from "../TimerInstance/TimerInstance";
 import type { PlayerInstance } from "../PlayerInstance/PlayerInstance";
 import type { GameLocation } from "../../data/types";
+import { pickRandom } from "../../utils/random-utils";
 
 export class RoomInstance {
 	id: string;
@@ -10,18 +11,18 @@ export class RoomInstance {
 	players: PlayerInstance[];
 	spies: PlayerInstance[];
 	civilians: PlayerInstance[];
-	gamePackId: string | null;
+	gamePackId: string;
 	timer: TimerInstance;
 	gameState: "in_lobby" | "in_game";
 
-	constructor(host: PlayerInstance) {
+	constructor(host: PlayerInstance, gamePackId: string) {
 		this.id = cryptoRandomString({ length: 6, type: "distinguishable" });
 		this.host = host;
 		this.location = null;
 		this.players = [];
 		this.spies = [];
 		this.civilians = [];
-		this.gamePackId = null;
+		this.gamePackId = gamePackId;
 		// Default timer set to 5 minutes
 		this.timer = new TimerInstance(5);
 		this.gameState = "in_lobby";
@@ -51,17 +52,19 @@ export class RoomInstance {
 		const found = this.players.find((p) => p.getId() === player.getId());
 		if (!found) {
 			this.players.push(player);
-		} 
+		}
 	}
 	/**
 	 * Removes a player from the room (removes from all lists in the room).
 	 * @param {string} player - The player to remove.
-	 * 
+	 *
 	 */
 	removePlayer(player: PlayerInstance) {
 		// Remove player from all lists since player is the lobby list, but spies and civilians are in game lists
 		this.players = this.players.filter((p) => p.getId() !== player.getId());
-		this.civilians = this.civilians.filter((civ) => civ.getId() !== player.getId());
+		this.civilians = this.civilians.filter(
+			(civ) => civ.getId() !== player.getId(),
+		);
 		this.spies = this.spies.filter((spy) => spy.getId() !== player.getId());
 	}
 	getPlayers() {
@@ -80,7 +83,7 @@ export class RoomInstance {
 		}
 	}
 	removeSpy(player: PlayerInstance) {
-		this.spies = this.spies.filter((spy) => spy.getId()!== player.getId());
+		this.spies = this.spies.filter((spy) => spy.getId() !== player.getId());
 	}
 	getSpies() {
 		return this.spies;
@@ -98,7 +101,9 @@ export class RoomInstance {
 		}
 	}
 	removeCivilian(player: PlayerInstance) {
-		this.civilians = this.civilians.filter((civ) => civ.getId()!== player.getId());
+		this.civilians = this.civilians.filter(
+			(civ) => civ.getId() !== player.getId(),
+		);
 	}
 	getCivilians() {
 		return this.civilians;
@@ -127,7 +132,20 @@ export class RoomInstance {
 	setGameState(newState: "in_lobby" | "in_game") {
 		this.gameState = newState;
 	}
+	private assignRolesToPlayers() {
+		const totalPlayers = this.players.length;
+		// must be atleast 1 spy, and everyone else is a civilian
+		const randomPlayerToBeSpy = this.players[pickRandom(0, totalPlayers - 1)];
+		this.spies.push(randomPlayerToBeSpy);
+		this.civilians = this.players.filter(
+			(player) => player.getId() !== randomPlayerToBeSpy.getId(),
+		);
+	}
 	startGame() {
+		this.assignRolesToPlayers();
+		if (!this.location) {
+			throw new Error("Cannot start game without a location set.");
+		}
 		this.setGameState("in_game");
 		this.timer.start();
 	}
@@ -136,8 +154,8 @@ export class RoomInstance {
 		this.timer.stop();
 	}
 	resetGame() {
+		// we do not reset players, host, gamePackId
 		this.location = null;
-    this.gamePackId = null;
 		this.civilians = [];
 		this.spies = [];
 		this.timer.reset(0);

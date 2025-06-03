@@ -12,6 +12,8 @@ import { PlayerInstance } from "./PlayerInstance/PlayerInstance";
 import { RoomInstance } from "./RoomInstance/Roominstance";
 import { entertainment_pack } from "../data/packs/entertainment_pack";
 import type { GamePack } from "../data/types";
+import { dark_pack } from "../data/packs/dark_pack";
+import { urban_living_pack } from "../data/packs/urban_living_pack";
 
 // load environment variables from .env file
 config();
@@ -85,6 +87,8 @@ const playersRegistry = new Map<string, PlayerInstance>();
 const gamePacksRegistry = new Map<string, GamePack>();
 
 gamePacksRegistry.set("entertainment_pack", entertainment_pack);
+gamePacksRegistry.set("urban_living_pack", urban_living_pack);
+gamePacksRegistry.set("dark_pack", dark_pack);
 logger.log("gamePacksRegistry", gamePacksRegistry);
 
 const validatedNamespaceConstant = process.env.WS_VALIDATED_NAMESPACE;
@@ -419,8 +423,23 @@ validatedNamespace.on("connection", (socket) => {
 			}
 		}
 
+		// First game pack index 0
+		const gamePack = Array.from(gamePacksRegistry.values())[0];
+
+		if (!gamePack) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "create_game",
+				namespace: validatedNamespaceConstant,
+				message: "No game pack found",
+				data: data,
+			});
+			throw new Error("No game pack found");
+		}
+
 		// Create new room
-		const newRoom = new RoomInstance(player);
+		const newRoom = new RoomInstance(player, gamePack.id);
 
 		// Add room to registry
 		roomsRegistry.set(newRoom.getId(), newRoom);
@@ -741,7 +760,8 @@ validatedNamespace.on("connection", (socket) => {
 				},
 			});
 
-			// Makre sure to re-add the player to the room
+			// Make sure to re-add the player to the room
+			// We don't need to make the socket join, because it is already done in the rejoinRoomsHelper
 			room.addPlayer(player);
 
 			socket.emit("check_if_allowed_in_game_response", {
@@ -813,6 +833,9 @@ validatedNamespace.on("connection", (socket) => {
 			// Makre sure to re-add the player to the room
 			room.addPlayer(player);
 
+			// Let socket join the room, since it cannot be done in the rejoinRoomsHelper.
+			socket.join(room.getId());
+
 			// If it is not in progress, then the player can join the game
 			socket.emit("check_if_allowed_in_game_response", {
 				allowedState: "allow_join",
@@ -863,6 +886,226 @@ validatedNamespace.on("connection", (socket) => {
 				},
 				playersInLobby: room.getPlayers(),
 			});
+	});
+
+	/**
+	 * get_game_packs
+	 * This event is fired when the client emits a get_game_packs event.
+	 */
+	socket.on("get_game_packs", () => {
+		const token = socket.handshake.auth.token;
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			event: "get_game_packs",
+			namespace: validatedNamespaceConstant,
+			message: "get game packs",
+			data: {
+				token: token,
+			},
+		});
+		// Emit the game packs to the client
+		socket.emit("get_game_packs_response", {
+			gamePacks: Array.from(gamePacksRegistry.values()),
+		});
+	});
+
+	/**
+	 * set_game_pack
+	 * This event is fired when the client emits a set_game_pack event.
+	 */
+	socket.on("set_game_pack", (data: { code: string; gamePackId: string }) => {
+		const token = socket.handshake.auth.token;
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			event: "set_game_pack",
+			namespace: validatedNamespaceConstant,
+			message: "set game pack",
+			data: data,
+		});
+		// Check if room exists
+		const room = roomsRegistry.get(data.code);
+		if (!room) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "set_game_pack",
+				namespace: validatedNamespaceConstant,
+				message: "No room instance found for code",
+				data: data,
+			});
+			return;
+		}
+		// Check if player issuing the event is the host of the room
+		const player = playersRegistry.get(token);
+		if (!player) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "set_game_pack",
+				namespace: validatedNamespaceConstant,
+				message: "No player instance found for token",
+				data: data,
+			});
+			return;
+		}
+		if (!room.isHost(player)) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "set_game_pack",
+				namespace: validatedNamespaceConstant,
+				message: "Player is not the host of the room",
+				data: {
+					player: player,
+					room: room.getId(),
+				},
+			});
+			return;
+		}
+		// Check if game pack exists
+		const gamePack = gamePacksRegistry.get(data.gamePackId);
+		if (!gamePack) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "set_game_pack",
+				namespace: validatedNamespaceConstant,
+				message: "No game pack instance found for id",
+				data: data,
+			});
+			return;
+		}
+		room.setGamePackId(data.gamePackId);
+
+		// No need to emit something back to the client, we are just setting the game pack
+	});
+
+	/**
+	 * get_current_game_pack
+	 * This event is fired when the client emits a get_current_game_pack event.
+	 */
+	socket.on("get_current_game_pack", (data: { code: string }) => {
+		const token = socket.handshake.auth.token;
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			event: "get_current_game_pack",
+			namespace: validatedNamespaceConstant,
+			message: "get current game pack",
+			data: data,
+		});
+		// Check if room exists
+		const room = roomsRegistry.get(data.code);
+		if (!room) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "get_current_game_pack",
+				namespace: validatedNamespaceConstant,
+				message: "No room instance found for code",
+				data: data,
+			});
+			return;
+		}
+		// Check if game pack exists
+		const gamePack = gamePacksRegistry.get(room.getGamePackId());
+		if (!gamePack) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "get_current_game_pack",
+				namespace: validatedNamespaceConstant,
+				message: "No game pack instance found for id",
+				data: data,
+			});
+			return;
+		}
+		// Just send entire game pack
+		socket.emit("get_current_game_pack_response", {
+			gamePack: gamePack,
+		});
+	});
+
+	/**
+	 * start_game
+	 * This event is fired when the client emits a start_game event.
+	 */
+	socket.on("start_game", (data: { code: string }) => {
+		const token = socket.handshake.auth.token;
+		logger.log({
+			socketId: socket.id,
+			token: token,
+			event: "start_game",
+			namespace: validatedNamespaceConstant,
+			message: "start game",
+			data: data,
+		});
+		// Check if room exists
+		const room = roomsRegistry.get(data.code);
+		if (!room) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "start_game",
+				namespace: validatedNamespaceConstant,
+				message: "No room instance found for code",
+				data: data,
+			});
+			return;
+		}
+		// Start conditions here:
+		// 1. Player that issued the event is the host of the room
+		// 2. Room has at least 2 players
+		// 3. Don't care about checking game state, just reset it
+		const player = playersRegistry.get(token);
+		if (!player) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "start_game",
+				namespace: validatedNamespaceConstant,
+				message: "No player instance found for token",
+				data: data,
+			});
+			return;
+		}
+		if (!room.isHost(player)) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "start_game",
+				namespace: validatedNamespaceConstant,
+				message: "Player is not the host of the room",
+				data: {
+					player: player,
+					room: room.getId(),
+				},
+			});
+			return;
+		}
+		if (room.getPlayers().length < 2) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "start_game",
+				namespace: validatedNamespaceConstant,
+				message: "Not enough players to start the game",
+				data: {
+					player: player,
+					room: room.getId(),
+				},
+			});
+			return;
+		}
+		// Reset the game
+		// The gamePackId that is set, will not be reset, so we can pick a location later
+		room.resetGame();
+
+		// Set game pack to the room, and pick location
+		// TODO:
+		return;
 	});
 
 	/**
