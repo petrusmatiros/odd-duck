@@ -1,8 +1,11 @@
+import type { Namespace } from "socket.io";
+import type { RoomInstance } from "../RoomInstance/Roominstance";
+
 export class TimerInstance {
 	id: string;
 	durationMinutes: number;
 	elapsedTimeInSeconds: number;
-	interval: NodeJS.Timeout | null;
+	interval: ReturnType<typeof setInterval> | null;
 
 	constructor(durationMinutes: number) {
 		this.id = crypto.randomUUID();
@@ -10,7 +13,17 @@ export class TimerInstance {
 		this.elapsedTimeInSeconds = 0;
 		this.interval = null;
 	}
-	start() {
+	start({
+		roles,
+		socketNamespace,
+		room,
+		socketEvent,
+	}: {
+		roles: string[];
+		socketNamespace: Namespace;
+		room: RoomInstance;
+		socketEvent: string;
+	}) {
 		if (this.interval) {
 			console.warn(`Timer ${this.id} is already running.`);
 			return;
@@ -31,6 +44,12 @@ export class TimerInstance {
 				this.stop();
 				console.log(`Timer ${this.id} has finished.`);
 			}
+
+			socketNamespace.to(room.getId()).emit(socketEvent, {
+				timeLeft: this.getTimeLeft(),
+			});
+
+			socketNamespace.to;
 		}, 1000); // 1 second interval
 	}
 	stop() {
@@ -41,7 +60,7 @@ export class TimerInstance {
 
 		clearInterval(this.interval);
 		this.interval = null;
-    this.elapsedTimeInSeconds = 0; // Reset elapsed time
+		this.elapsedTimeInSeconds = 0; // Reset elapsed time
 		console.log(`Timer ${this.id} has been stopped.`);
 	}
 	reset(newDurationMinutes: number) {
@@ -54,7 +73,7 @@ export class TimerInstance {
 	isRunning() {
 		return this.interval !== null;
 	}
-	setInterval(newInterval: NodeJS.Timeout) {
+	setInterval(newInterval: ReturnType<typeof setInterval>) {
 		this.interval = newInterval;
 		console.log(`Timer ${this.getId()} interval set.`);
 	}

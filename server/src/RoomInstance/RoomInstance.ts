@@ -3,6 +3,7 @@ import { TimerInstance } from "../TimerInstance/TimerInstance";
 import type { PlayerInstance } from "../PlayerInstance/PlayerInstance";
 import type { GameLocation } from "../../data/types";
 import { pickRandom } from "../../utils/random-utils";
+import type { Namespace } from "socket.io";
 
 export class RoomInstance {
 	id: string;
@@ -11,18 +12,20 @@ export class RoomInstance {
 	players: PlayerInstance[];
 	spies: PlayerInstance[];
 	civilians: PlayerInstance[];
-	gamePackId: string;
+	civilianRoles: Map<string, string>;
+	gamePackId: string | null;
 	timer: TimerInstance;
 	gameState: "in_lobby" | "in_game";
 
-	constructor(host: PlayerInstance, gamePackId: string) {
+	constructor(host: PlayerInstance) {
 		this.id = cryptoRandomString({ length: 6, type: "distinguishable" });
 		this.host = host;
 		this.location = null;
 		this.players = [];
 		this.spies = [];
 		this.civilians = [];
-		this.gamePackId = gamePackId;
+		this.civilianRoles = new Map<string, string>();
+		this.gamePackId = null;
 		// Default timer set to 5 minutes
 		this.timer = new TimerInstance(5);
 		this.gameState = "in_lobby";
@@ -114,6 +117,22 @@ export class RoomInstance {
 	setCivilians(newCivilians: PlayerInstance[]) {
 		this.civilians = newCivilians;
 	}
+	hasCivilianRole(player: PlayerInstance) {
+		return this.civilianRoles.has(player.getId());
+	}
+	addCivilianRole(player: PlayerInstance, role: string) {
+		if (!this.hasCivilianRole(player)) {
+			this.civilianRoles.set(player.getId(), role);
+		}
+	}
+	removeCivilianRole(player: PlayerInstance) {
+		if (this.hasCivilianRole(player)) {
+			this.civilianRoles.delete(player.getId());
+		}
+	}
+	getCivilianRole(player: PlayerInstance) {
+		return this.civilianRoles.get(player.getId());
+	}
 	getGamePackId() {
 		return this.gamePackId;
 	}
@@ -141,13 +160,36 @@ export class RoomInstance {
 			(player) => player.getId() !== randomPlayerToBeSpy.getId(),
 		);
 	}
-	startGame() {
-		this.assignRolesToPlayers();
+	private assignCivilianRoles(roles: string[]) {
+		if (this.civilians.length === 0) {
+			throw new Error("No civilians to assign roles to.");
+		}
+		for (const civilian of this.civilians) {
+			const randomRole = roles[pickRandom(0, roles.length - 1)];
+			this.addCivilianRole(civilian, randomRole);
+		}
+	}
+	startGame({
+		roles,
+		socketNamespace,
+		room,
+		socketEvent,
+	}: {
+		roles: string[];
+		socketNamespace: Namespace;
+		room: RoomInstance;
+		socketEvent: string;
+	}) {
 		if (!this.location) {
 			throw new Error("Cannot start game without a location set.");
 		}
+		if (!this.gamePackId) {
+			throw new Error("Cannot start game without a game pack set.");
+		}
+		this.assignRolesToPlayers();
+		this.assignCivilianRoles(roles);
 		this.setGameState("in_game");
-		this.timer.start();
+		this.timer.start({roles, socketNamespace, room, socketEvent});
 	}
 	endGame() {
 		this.setGameState("in_lobby");
@@ -156,6 +198,7 @@ export class RoomInstance {
 	resetGame() {
 		// we do not reset players, host, gamePackId
 		this.location = null;
+		this.gamePackId = null;
 		this.civilians = [];
 		this.spies = [];
 		this.timer.reset(0);
