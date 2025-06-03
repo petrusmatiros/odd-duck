@@ -60,7 +60,14 @@ export default function Page() {
 	const [isAllowedInRoom, setIsAllowedInRoom] = useState(false);
 	const [hasJoinedRoom, setHasJoinedRoom] = useState(false);
 	const [playersInLobby, setPlayersInLobby] = useState<Player[]>([]);
+	const [playerId, setPlayerId] = useState<string | null>(null);
 	const [gamePacks, setGamePacks] = useState<GamePack[] | null>(null);
+	const [gameState, setGameState] = useState<"in_lobby" | "in_game">(
+		"in_lobby",
+	);
+	const [gamePackId, setGamePackId] = useState<string | null>(null);
+	const [location, setLocation] = useState<GameLocation | null>(null);
+	const [role, setRole] = useState<"spy" | string | null>(null);
 	const [isHost, setIsHost] = useState<string | null>(null);
 
 	const roomCode = window.location.pathname.split("/").pop();
@@ -92,7 +99,6 @@ export default function Page() {
 			sockRef.emit("check_if_allowed_in_game", {
 				code: roomCode,
 			});
-			sockRef.emit("get_game_packs");
 		});
 		sockRef.on("disconnect", () => {
 			logger.log("Validated socket disconnected");
@@ -119,6 +125,7 @@ export default function Page() {
 				allowedState: "not_allowed" | "allow_join" | "allow_register";
 				isHost: string;
 				playersInLobby?: Player[];
+				playerId?: string;
 				toastMessage: string;
 			}) => {
 				toast(data.toastMessage);
@@ -141,7 +148,31 @@ export default function Page() {
 				// Is only defined if allowed
 				setIsHost(data.isHost || null);
 
+				setPlayerId(data.playerId || null);
+
 				logger.log("check_if_allowed_in_game_response", data);
+
+				sockRef.emit("get_game_state", {
+					code: roomCode,
+				});
+			},
+		);
+
+		sockRef.on(
+			"get_game_state_response",
+			(data: {
+				gameState: "in_lobby" | "in_game";
+				gamePackId: string | null;
+				gamePacks: GamePack[];
+				location: GameLocation | null;
+				playerRole: "spy" | string | null;
+			}) => {
+				logger.log("Game state received", data);
+				setGameState(data.gameState);
+				setGamePackId(data.gamePackId);
+				setGamePacks(data.gamePacks);
+				setLocation(data.location);
+				setRole(data.playerRole);
 			},
 		);
 
@@ -184,17 +215,35 @@ export default function Page() {
 			},
 		);
 
+		sockRef.on(
+			"start_game_response_broadcast_all",
+			(data: {
+				gameStarted: boolean;
+				toastMessage: string;
+			}) => {
+				toast(data.toastMessage);
+				if (!data.gameStarted) {
+					return;
+				}
+				logger.log("Game started", data);
+				sockRef.emit("get_game_state", {
+					code: roomCode,
+				});
+			},
+		);
+
 		return () => {
 			logger.log("Cleaning up");
 			sockRef.off("connect");
 			sockRef.off("disconnect");
 			sockRef.off("connect_error");
 			sockRef.off("check_if_allowed_in_game_response");
-			sockRef.off("get_game_packs_response");
+			sockRef.off("get_game_state_response");
 			sockRef.off("direct_join_game_response");
 			sockRef.off("register_new_player_token_response");
 			sockRef.off("player_joined_game_broadcast_all");
 			sockRef.off("player_disconnected_broadcast_all");
+			sockRef.off("start_game_response_broadcast_all");
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [roomCode]);
@@ -263,7 +312,7 @@ export default function Page() {
 						});
 					}}
 				/>
-			) : (
+			) : gameState === "in_lobby" ? (
 				<div className="flex flex-col items-center justify-center min-h-screen gap-4">
 					<div className="flex flex-col items-center justify-center gap-4">
 						<h1 className="text-4xl font-bold">Odd Duck</h1>
@@ -286,7 +335,7 @@ export default function Page() {
 					</div>
 
 					{/* Only the host should be able to pick game packs */}
-					{isHost && (
+					{isHost === playerId ? (
 						<div className="flex flex-col items-center justify-center gap-4">
 							<label className="text-xl font-bold" htmlFor="game-pack-select">
 								Select a game pack to play:
@@ -294,18 +343,8 @@ export default function Page() {
 							<select
 								name="game-pack-select"
 								id="game-pack-select"
-								disabled={!isHost}
+								disabled={isHost !== playerId}
 								className="w-full max-w-2xl p-2 border border-gray-300 rounded"
-								onChange={(e) => {
-									if (!validatedWsClient?.current) {
-										return;
-									}
-									console.log("Selected game pack", e.target.value);
-									validatedWsClient?.current?.socket.emit("set_game_pack", {
-										code: roomCode,
-										gamePackId: e.target.value,
-									});
-								}}
 							>
 								{gamePacks?.map((pack) => {
 									return (
@@ -316,24 +355,46 @@ export default function Page() {
 								})}
 							</select>
 						</div>
-					)}
+					) : null}
 
 					{/* Only the host should be able to start the game */}
-					{isHost && <button
-						type="button"
-						className="cursor-pointer text-2xl font-bold px-32 py-2 rounded bg-green-700 text-white disabled:opacity-25 disabled:cursor-not-allowed disabled:bg-gray-700"
-						disabled={playersInLobby.length < 2}
-						onClick={() => {
-							if (!validatedWsClient?.current) {
-								return;
-							}
-							validatedWsClient?.current?.socket.emit("start_game", {
-								code: roomCode,
-							});
-						}}
-					>
-						Start
-					</button>}
+					{isHost === playerId ? (
+						<button
+							type="button"
+							className="cursor-pointer text-2xl font-bold px-32 py-2 rounded bg-green-700 text-white disabled:opacity-25 disabled:cursor-not-allowed disabled:bg-gray-700"
+							disabled={playersInLobby.length < 2}
+							onClick={() => {
+								if (!validatedWsClient?.current) {
+									return;
+								}
+								const currentGamePackSelected = document.getElementById(
+									"game-pack-select",
+								) as HTMLSelectElement;
+								if (!currentGamePackSelected) {
+									toast("Please select a game pack first!", {
+										description:
+											"You must select a game pack to start the game.",
+										richColors: true,
+									});
+									return;
+								}
+								if (!currentGamePackSelected.value) {
+									toast("Please select a game pack first!", {
+										description:
+											"You must select a game pack to start the game.",
+										richColors: true,
+									});
+									return;
+								}
+								validatedWsClient?.current?.socket.emit("start_game", {
+									code: roomCode,
+									gamePackId: currentGamePackSelected.value,
+								});
+							}}
+						>
+							Start
+						</button>
+					) : null}
 
 					{playersInLobby?.map((player) => {
 						return (
@@ -348,6 +409,20 @@ export default function Page() {
 							</div>
 						);
 					})}
+				</div>
+			) : (
+				<div>
+					{/* Role Card */}
+					<div>role card</div>
+
+					{/* timer */}
+					<div>timer</div>
+
+					{/* players */}
+					<div>players</div>
+
+					{/* locations */}
+					<div>locations</div>
 				</div>
 			)}
 		</>
