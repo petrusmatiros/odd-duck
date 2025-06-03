@@ -65,10 +65,7 @@ export default function Page() {
 	const [gameState, setGameState] = useState<"in_lobby" | "in_game">(
 		"in_lobby",
 	);
-	const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
-	const [gameTimeInSeconds, setGameTimeInSeconds] = useState<number | null>(
-		null,
-	);
+	const [timeLeft, setTimeLeft] = useState<number | null>(null);
 	const [gamePackId, setGamePackId] = useState<string | null>(null);
 	const [location, setLocation] = useState<GameLocation | null>(null);
 	const [role, setRole] = useState<"spy" | string | null>(null);
@@ -173,8 +170,7 @@ export default function Page() {
 				gamePacks: GamePack[];
 				location: GameLocation | null;
 				playerRole: "spy" | string | null;
-				durationMinutes: number | null;
-				elapsedTimeInSeconds: number | null;
+				timeLeft: number | null;
 			}) => {
 				logger.log("Game state received", data);
 				setGameState(data.gameState);
@@ -182,15 +178,11 @@ export default function Page() {
 				setGamePacks(data.gamePacks);
 				setLocation(data.location);
 				setRole(data.playerRole);
-				setDurationMinutes(data.durationMinutes);
-				setGameTimeInSeconds(data.elapsedTimeInSeconds);
+				setTimeLeft(
+					data.timeLeft
+				);
 			},
 		);
-
-		sockRef.on("get_game_packs_response", (data: { gamePacks: GamePack[] }) => {
-			logger.log("Game packs received", data.gamePacks);
-			setGamePacks(data.gamePacks);
-		});
 
 		sockRef.on(
 			"direct_join_game_response",
@@ -242,6 +234,16 @@ export default function Page() {
 				});
 			},
 		);
+
+		sockRef.on(
+			"timer_response_broadcast_all",
+			(data: {
+				timeLeft: number;
+			}) => {
+				logger.log("Timer response received", data);
+				setTimeLeft(data.timeLeft);
+			}
+		)
 
 		return () => {
 			logger.log("Cleaning up");
@@ -428,8 +430,7 @@ export default function Page() {
 					<div>{location?.translations[selectedLocale].title}</div>
 
 					{/* timer */}
-					<div>{durationMinutes}</div>
-					<div>{gameTimeInSeconds}</div>
+					<div>{timeLeft !== null ? `Time left: ${timeLeft} seconds` : "No timer"}</div>
 
 					{/* game pack */}
 
