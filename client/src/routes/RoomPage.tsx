@@ -65,10 +65,17 @@ export default function Page() {
 	const [gameState, setGameState] = useState<"in_lobby" | "in_game">(
 		"in_lobby",
 	);
+	const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
+	const [gameTimeInSeconds, setGameTimeInSeconds] = useState<number | null>(
+		null,
+	);
 	const [gamePackId, setGamePackId] = useState<string | null>(null);
 	const [location, setLocation] = useState<GameLocation | null>(null);
 	const [role, setRole] = useState<"spy" | string | null>(null);
 	const [isHost, setIsHost] = useState<string | null>(null);
+	const [selectedLocale, setSelectedLocale] = useState<GameSupportedLanguages>(
+		"en",
+	);
 
 	const roomCode = window.location.pathname.split("/").pop();
 	const logger = new Logger(`client/room/${roomCode}`);
@@ -166,6 +173,8 @@ export default function Page() {
 				gamePacks: GamePack[];
 				location: GameLocation | null;
 				playerRole: "spy" | string | null;
+				durationMinutes: number | null;
+				elapsedTimeInSeconds: number | null;
 			}) => {
 				logger.log("Game state received", data);
 				setGameState(data.gameState);
@@ -173,6 +182,8 @@ export default function Page() {
 				setGamePacks(data.gamePacks);
 				setLocation(data.location);
 				setRole(data.playerRole);
+				setDurationMinutes(data.durationMinutes);
+				setGameTimeInSeconds(data.elapsedTimeInSeconds);
 			},
 		);
 
@@ -413,16 +424,51 @@ export default function Page() {
 			) : (
 				<div>
 					{/* Role Card */}
-					<div>role card</div>
+					<div>{role}</div>
+					<div>{location?.translations[selectedLocale].title}</div>
 
 					{/* timer */}
-					<div>timer</div>
+					<div>{durationMinutes}</div>
+					<div>{gameTimeInSeconds}</div>
+
+					{/* game pack */}
 
 					{/* players */}
-					<div>players</div>
+					{playersInLobby?.map((player) => {
+						return (
+							<div
+								key={player.id}
+								className="flex flex-row items-center justify-between w-full max-w-2xl p-4 border-b border-gray-300"
+							>
+								<p className="text-xl font-bold">{player.name}</p>
+								{isHost && player.id === isHost ? (
+									<span>{"(Host)"}</span>
+								) : null}
+							</div>
+						);
+					})}
 
-					{/* locations */}
-					<div>locations</div>
+					{/* locations for specific gamePackId */}
+					{
+						gamePacks?.find((pack) => pack.id === gamePackId)?.locations.map(
+							(location) => {
+								const locationInLocale =
+									location.translations[selectedLocale];
+								return (
+									<div key={location.id}>{locationInLocale.title}</div>
+								);
+							},
+						)
+					}
+
+					<button type="button" onClick={() => {
+						setSelectedLocale((prev) =>
+							prev === "en" ? "sv" : "en",
+						);
+						toast(`Locale switched to ${selectedLocale === "en" ? "Swedish" : "English"}`, {
+							richColors: true,
+						});
+					}}>Switch to {selectedLocale === "en" ? "sv" : "en"}</button>
 				</div>
 			)}
 		</>
