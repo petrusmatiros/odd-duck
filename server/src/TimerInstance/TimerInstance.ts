@@ -14,12 +14,10 @@ export class TimerInstance {
 		this.interval = null;
 	}
 	start({
-		roles,
 		socketNamespace,
 		room,
 		socketEvent,
 	}: {
-		roles: string[];
 		socketNamespace: Namespace;
 		room: RoomInstance;
 		socketEvent: string;
@@ -28,11 +26,13 @@ export class TimerInstance {
 			console.warn(`Timer ${this.id} is already running.`);
 			return;
 		}
+		console.log(`Starting timer ${this.id} for ${this.durationMinutes} minutes.`);
 
 		this.interval = setInterval(() => {
+			console.log(this.durationMinutes);
 			this.elapsedTimeInSeconds += 1;
 			const timeLeftInSeconds =
-				this.durationMinutes * 60 - this.elapsedTimeInSeconds;
+				(this.durationMinutes * 60) - this.elapsedTimeInSeconds;
 			const minutesLeft = Math.floor(timeLeftInSeconds / 60);
 			const secondsLeft = timeLeftInSeconds % 60;
 
@@ -45,11 +45,10 @@ export class TimerInstance {
 				console.log(`Timer ${this.id} has finished.`);
 			}
 
+			// Emit after the check to avoid emitting when the timer is stopped
 			socketNamespace.to(room.getId()).emit(socketEvent, {
 				timeLeft: this.getTimeLeft(),
 			});
-
-			socketNamespace.to;
 		}, 1000); // 1 second interval
 	}
 	stop() {
@@ -83,10 +82,10 @@ export class TimerInstance {
 	private getId() {
 		return this.id;
 	}
-	private getDuration() {
+	getDuration() {
 		return this.durationMinutes;
 	}
-	private setDuration(newDurationMinutes: number) {
+	setDuration(newDurationMinutes: number) {
 		this.durationMinutes = newDurationMinutes;
 		console.log(
 			`Timer ${this.getId()} duration set to ${this.durationMinutes} minutes.`,

@@ -168,16 +168,43 @@ export default function Page() {
 				gameState: "in_lobby" | "in_game";
 				gamePackId: string | null;
 				gamePacks: GamePack[];
-				location: GameLocation | null;
-				playerRole: "spy" | string | null;
+				location: GameLocation["id"] | null;
+				playerRoleIndex: number | null;
+				isSpy: boolean;
 				timeLeft: number | null;
 			}) => {
 				logger.log("Game state received", data);
 				setGameState(data.gameState);
 				setGamePackId(data.gamePackId);
 				setGamePacks(data.gamePacks);
-				setLocation(data.location);
-				setRole(data.playerRole);
+				// Use the index, look through the current selected location in the gamePack, and based on current locale, select the role with the index
+				if (data.isSpy) {
+					setRole("spy");
+				} else {
+					if (data.playerRoleIndex === null) {
+						throw new Error(
+							"Player role index is null, this should not happen if the game is in progress.",
+						);
+					}
+					if (!data.location) {
+						throw new Error(
+							"Location is null, this should not happen if the game is in progress.",
+						);
+					}
+					const locationObject = data.gamePacks
+						.find((pack) => pack.id === data.gamePackId)
+						?.locations.find((loc) => loc.id === data.location);
+					if (!locationObject) {
+						throw new Error(
+							"Location object not found in game packs, this should not happen if the game is in progress.",
+						);
+					}
+
+					setLocation(locationObject);
+					const currentLocation = locationObject.translations[selectedLocale];
+					const role = currentLocation.roles[data.playerRoleIndex];
+					setRole(role);
+				}
 				setTimeLeft(
 					data.timeLeft
 				);
@@ -257,6 +284,7 @@ export default function Page() {
 			sockRef.off("player_joined_game_broadcast_all");
 			sockRef.off("player_disconnected_broadcast_all");
 			sockRef.off("start_game_response_broadcast_all");
+			sockRef.off("timer_response_broadcast_all");
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [roomCode]);
@@ -333,11 +361,11 @@ export default function Page() {
 							Room Code:{" "}
 							<button
 								type="button"
-								className="cursor-pointer px-2 bg-gray-500 text-white rounded"
+								className="cursor-pointer px-2 bg-gray-500 text-white rounded-sm"
 								onClick={() => {
-									copyToClipboard(window.location.href);
+									copyToClipboard(roomCode);
 									toast("Room code copied to clipboard!", {
-										description: window.location.href,
+										description: roomCode,
 										richColors: true,
 									});
 								}}
@@ -357,7 +385,7 @@ export default function Page() {
 								name="game-pack-select"
 								id="game-pack-select"
 								disabled={isHost !== playerId}
-								className="w-full max-w-2xl p-2 border border-gray-300 rounded"
+								className="w-full max-w-2xl p-2 border border-gray-300 rounded-sm"
 							>
 								{gamePacks?.map((pack) => {
 									return (
@@ -374,7 +402,7 @@ export default function Page() {
 					{isHost === playerId ? (
 						<button
 							type="button"
-							className="cursor-pointer text-2xl font-bold px-32 py-2 rounded bg-green-700 text-white disabled:opacity-25 disabled:cursor-not-allowed disabled:bg-gray-700"
+							className="cursor-pointer text-2xl font-bold px-32 py-2 rounded-sm bg-green-700 text-white disabled:opacity-25 disabled:cursor-not-allowed disabled:bg-gray-700"
 							disabled={playersInLobby.length < 2}
 							onClick={() => {
 								if (!validatedWsClient?.current) {

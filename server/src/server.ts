@@ -979,7 +979,8 @@ validatedNamespace.on("connection", (socket) => {
 			gamePackId: room.getGamePackId(),
 			gamePacks: Array.from(gamePacksRegistry.values()),
 			location: room.getLocation(),
-			playerRole: room.getCivilianRole(player),
+			playerRoleIndex: room.getCivilianRole(player) ?? null,
+			isSpy: room.hasSpy(player),
 			timeLeft: room.getTimer().getTimeLeft(),
 		});
 	});
@@ -1214,8 +1215,8 @@ validatedNamespace.on("connection", (socket) => {
 		}
 		// Set location to the room
 		room.setLocation(location.id);
-		// Pass game pack location roles to the room
-		// The start game function will handle starting of the game and assigning roles
+		// Pass socket event to be emitted by the room's timer instance
+		// The startGame function will handle assignment of roles, starting the timer, and broadcasting the event
 		room.startGame({
 			roles: location.translations.en.roles,
 			socketNamespace: validatedNamespace,
@@ -1269,6 +1270,20 @@ validatedNamespace.on("connection", (socket) => {
 
 		for (const room of roomsRegistry.values()) {
 			// If the player is a host of the room, reset the game
+			if (!room.hasPlayer(player)) {
+				logger.log({
+					socketId: socket.id,
+					token: token,
+					event: "disconnect",
+					namespace: validatedNamespaceConstant,
+					message: "Player is not in the room",
+					data: {
+						roomId: room.getId(),
+						playerId: player.getId(),
+					},
+				});
+				continue;
+			}
 			if (room.getHost().getId() === player.getId()) {
 				logger.log({
 					socketId: socket.id,
