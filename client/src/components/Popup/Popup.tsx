@@ -8,22 +8,28 @@ import {
 	DialogDescription,
 	DialogTitle,
 	DialogTrigger,
+	DialogClose,
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { hsl } from "@/styles/utils";
+import type { VariantProps } from "class-variance-authority";
 
 interface Props {
 	open?: boolean;
-	withoutTriggerButton?: boolean;
-	buttonTitle?: string;
-	triggerButtonClick?: (
-		e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-	) => void;
-	dialogTitle: string;
-	dialogDescription: string;
-	submitButtonTitle: string;
-	inputs: {
+	triggerButton?: {
+		buttonTitle: string;
+		buttonVariant: VariantProps<typeof Button>["variant"];
+		triggerButtonClick?: (
+			e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+		) => void;
+	};
+	dialog: {
+		dialogTitle: string;
+		dialogDescription: string;
+	};
+	inputs?: {
 		id: string;
+		value?: string;
 		type: string;
 		labelTitle?: string;
 		placeholder?: string;
@@ -34,36 +40,42 @@ interface Props {
 		onClick?: (e: React.MouseEvent<HTMLInputElement, MouseEvent>) => void;
 		onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 	}[];
-	submitButtonOnClick?: (
-		e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-	) => void;
+	submitButton: {
+		submitButtonTitle: string;
+		submitButtonOnClick?: (
+			e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+		) => void;
+	};
+	closeButton?: {
+		closeButtonTitle: string;
+		closeButtonOnClick?: (
+			e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+		) => void;
+	};
 }
 
 export default function Popup({
 	open,
-	withoutTriggerButton,
-	buttonTitle,
-	triggerButtonClick,
-	dialogTitle,
-	dialogDescription,
-	submitButtonTitle,
+	triggerButton,
+	dialog: { dialogTitle, dialogDescription },
 	inputs,
-	submitButtonOnClick,
+	submitButton: { submitButtonTitle, submitButtonOnClick },
+	closeButton,
 }: Props) {
 	return (
 		<Dialog open={open}>
-			{!withoutTriggerButton && (
+			{triggerButton?.buttonTitle && (
 				<DialogTrigger asChild>
-					{buttonTitle && (
+					{triggerButton?.buttonTitle && (
 						<Button
-							variant="outline"
+							variant={triggerButton?.buttonVariant}
 							style={{
 								paddingInline: "1rem",
 								width: "10rem",
 							}}
-							onClick={triggerButtonClick}
+							onClick={triggerButton?.triggerButtonClick}
 						>
-							{buttonTitle}
+							{triggerButton?.buttonTitle}
 						</Button>
 					)}
 				</DialogTrigger>
@@ -94,6 +106,7 @@ export default function Popup({
 							<Input
 								id={input.id}
 								type={input.type}
+								value={input.value}
 								maxLength={input.maxLength}
 								minLength={input.minLength}
 								placeholder={input.placeholder}
@@ -109,7 +122,10 @@ export default function Popup({
 									if (e.key === "Enter") {
 										e.preventDefault();
 										submitButtonOnClick?.(
-											e as unknown as React.MouseEvent<HTMLButtonElement, MouseEvent>,
+											e as unknown as React.MouseEvent<
+												HTMLButtonElement,
+												MouseEvent
+											>,
 										);
 									}
 								}}
@@ -118,6 +134,17 @@ export default function Popup({
 					))}
 				</div>
 				<DialogFooter>
+					{closeButton?.closeButtonTitle && (
+						<DialogClose asChild>
+							<Button
+								type="button"
+								variant="secondary"
+								onClick={closeButton?.closeButtonOnClick}
+							>
+								{closeButton?.closeButtonTitle || "Close"}
+							</Button>
+						</DialogClose>
+					)}
 					{submitButtonTitle && (
 						<Button
 							type="submit"

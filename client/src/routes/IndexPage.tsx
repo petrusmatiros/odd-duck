@@ -9,13 +9,12 @@ import {
 } from "../utils/cookie-utils";
 import { Logger } from "../utils/log-utils";
 import { Howl } from "howler";
-import {
-	BASE_CONFIG
-} from "@/config/config";
+import { BASE_CONFIG } from "@/config/config";
 
 export default function Index() {
 	const logger = new Logger("client/index");
 	const [hasPlayername, setHasPlayername] = useState(false);
+	const [currentUsername, setCurrentUsername] = useState<string | null>(null);
 
 	const validatedWsClient = useRef<WebsocketClient>(
 		new WebsocketClient(
@@ -85,6 +84,7 @@ export default function Index() {
 
 		sockRef.on("connect", () => {
 			logger.log("Validated socket connected");
+			sockRef.emit("check_if_player_name_exists");
 		});
 		sockRef.on("disconnect", () => {
 			logger.log("Validated socket disconnected");
@@ -124,6 +124,19 @@ export default function Index() {
 			},
 		);
 
+		sockRef.on("change_username_response", (data: { toastMessage: string }) => {
+			logger.log("Change username response", data.toastMessage);
+			toast(data.toastMessage);
+		});
+
+		sockRef.on(
+			"get_current_username_response",
+			(data: { name: string }) => {
+				setCurrentUsername(data.name);
+				logger.log("Current username", data.name);
+			},
+		);
+
 		return () => {
 			logger.log("Cleaning up socket listeners");
 			sockRef.off("connect");
@@ -132,6 +145,8 @@ export default function Index() {
 			sockRef.off("register_new_player_token_response");
 			sockRef.off("check_if_already_created_game_before_response");
 			sockRef.off("check_if_player_name_exists_response");
+			sockRef.off("change_username_response");
+			sockRef.off("get_current_username_response");
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
@@ -149,18 +164,22 @@ export default function Index() {
 				/>
 				<div className="flex flex-col items-center w-full gap-2">
 					<Popup
-						buttonTitle="Create Game"
-						triggerButtonClick={() => {
-							logger.log("Create game clicked");
-							// play sound
-							sound_quack.play();
-							validatedWsClient?.current?.socket.emit(
-								"check_if_already_created_game_before",
-							);
+						triggerButton={{
+							buttonVariant: "outline",
+							buttonTitle: "Create Game",
+							triggerButtonClick: () => {
+								logger.log("Create game clicked");
+								// play sound
+								sound_quack.play();
+								validatedWsClient?.current?.socket.emit(
+									"check_if_already_created_game_before",
+								);
+							}
 						}}
-						dialogTitle="Create Game"
-						dialogDescription="What be your name veary traveller?"
-						submitButtonTitle="Create Game"
+						dialog={{
+							dialogTitle: "Create Game",
+							dialogDescription: "What be your name veary traveller?"
+						}}
 						inputs={[
 							{
 								id: "name",
@@ -182,44 +201,51 @@ export default function Index() {
 								},
 							},
 						]}
-						submitButtonOnClick={(e) => {
-							e.preventDefault();
-							logger.log("Create game clicked");
-							const name = (document.getElementById("name") as HTMLInputElement)
-								.value;
-							logger.log("Name", name);
-							if (!name) {
-								return;
+						submitButton={{
+							submitButtonTitle: "Create Game",
+							submitButtonOnClick: (e) => {
+								e.preventDefault();
+								logger.log("Create game clicked");
+								const name = (document.getElementById("name") as HTMLInputElement)
+									.value;
+								logger.log("Name", name);
+								if (!name) {
+									return;
+								}
+
+								logger.log("Name", name.length);
+
+								if (name.length < 1 || name.length > 20) {
+									return;
+								}
+
+								logger.log("creating game...", name);
+
+								validatedWsClient?.current?.socket.emit("create_game", {
+									name: name,
+								});
 							}
-
-							logger.log("Name", name.length);
-
-							if (name.length < 1 || name.length > 20) {
-								return;
-							}
-
-							logger.log("creating game...", name);
-
-							validatedWsClient?.current?.socket.emit("create_game", {
-								name: name,
-							});
 						}}
 					/>
 
 					{hasPlayername ? (
 						<Popup
-							buttonTitle="Join Game"
-							triggerButtonClick={() => {
-								logger.log("Join game clicked");
-								validatedWsClient?.current?.socket.emit(
-									"check_if_player_name_exists",
-								);
-								// play sound
-								sound_quack.play();
+							triggerButton={{
+								buttonVariant: "outline",
+								buttonTitle: "Join Game",
+								triggerButtonClick: () => {
+									logger.log("Join game clicked");
+									validatedWsClient?.current?.socket.emit(
+										"check_if_player_name_exists",
+									);
+									// play sound
+									sound_quack.play();
+								}
 							}}
-							dialogTitle="Join Game"
-							dialogDescription="What be the code to the room ye be joinin?"
-							submitButtonTitle="Join Game"
+							dialog={{
+								dialogTitle: "Join Game",
+								dialogDescription: "What be the code to the room ye be joinin?"
+							}}
 							inputs={[
 								{
 									id: "code",
@@ -254,40 +280,47 @@ export default function Index() {
 									},
 								},
 							]}
-							submitButtonOnClick={(e) => {
-								e.preventDefault();
-								const code = (
-									document.getElementById("code") as HTMLInputElement
-								).value;
+							submitButton={{
+								submitButtonTitle: "Join Game",
+								submitButtonOnClick: (e) => {
+									e.preventDefault();
+									const code = (
+										document.getElementById("code") as HTMLInputElement
+									).value;
 
-								if (!code) {
-									return;
+									if (!code) {
+										return;
+									}
+
+									if (code.length !== 6) {
+										return;
+									}
+
+									validatedWsClient?.current?.socket.emit("join_game", {
+										name: null,
+										code: code,
+									});
 								}
-
-								if (code.length !== 6) {
-									return;
-								}
-
-								validatedWsClient?.current?.socket.emit("join_game", {
-									name: null,
-									code: code,
-								});
 							}}
 						/>
 					) : (
 						<Popup
-							buttonTitle="Join Game"
-							triggerButtonClick={() => {
-								logger.log("Join game clicked");
-								validatedWsClient?.current?.socket.emit(
-									"check_if_player_name_exists",
-								);
-								// play sound
-								sound_quack.play();
+							triggerButton={{
+								buttonVariant: "outline",
+								buttonTitle: "Join Game",
+								triggerButtonClick: () => {
+									logger.log("Join game clicked");
+									validatedWsClient?.current?.socket.emit(
+										"check_if_player_name_exists",
+									);
+									// play sound
+									sound_quack.play();
+								}
 							}}
-							dialogTitle="Join Game"
-							dialogDescription="What be your name veary traveller? And what be the code to the room ye be joinin?"
-							submitButtonTitle="Join Game"
+							dialog={{
+								dialogTitle: "Join Game",
+								dialogDescription: "What be your name veary traveller? And what be the code to the room ye be joinin?"
+							}}
 							inputs={[
 								{
 									id: "name",
@@ -352,34 +385,101 @@ export default function Index() {
 									},
 								},
 							]}
-							submitButtonOnClick={(e) => {
-								e.preventDefault();
-								const name = (
-									document.getElementById("name") as HTMLInputElement
-								).value;
-								const code = (
-									document.getElementById("code") as HTMLInputElement
-								).value;
+							submitButton={{
+								submitButtonTitle: "Join Game",
+								submitButtonOnClick: (e) => {
+									e.preventDefault();
+									const name = (
+										document.getElementById("name") as HTMLInputElement
+									).value;
+									const code = (
+										document.getElementById("code") as HTMLInputElement
+									).value;
 
-								if (!name || !code) {
+									if (!name || !code) {
+										return;
+									}
+
+									if (name.length < 1 || name.length > 20) {
+										return;
+									}
+
+									if (code.length !== 6) {
+										return;
+									}
+
+									validatedWsClient?.current?.socket.emit("join_game", {
+										name: name,
+										code: code,
+									});
+								}
+							}}
+						/>
+					)}
+					{hasPlayername && <Popup
+						triggerButton={{
+							buttonVariant: "outline",
+							buttonTitle: "Change Username",
+							triggerButtonClick: () => {
+								logger.log("Change Username clicked");
+								// play sound
+								sound_quack.play();
+								validatedWsClient?.current?.socket.emit(
+									"get_current_username",
+								);
+							}
+						}}
+						dialog={{
+							dialogTitle: "Change Username",
+							dialogDescription: "What be your new name veary traveller?"
+						}}
+						inputs={[
+							{
+								id: "name",
+								type: "text",
+								labelTitle: "Name",
+								placeholder: "Name",
+								value: currentUsername || "",
+								required: true,
+								minLength: 1,
+								maxLength: 20,
+								className: "col-span-3",
+								onChange: (e) => {
+									const lowerBound = 1.75;
+									const upperBound = 2;
+									const randomNum = Math.random() + lowerBound;
+									sound_quack.rate(
+										randomNum < upperBound ? randomNum : lowerBound,
+									);
+									sound_quack.play();
+									setCurrentUsername(e.target.value);
+								},
+							},
+						]}
+						submitButton={{
+							submitButtonTitle: "Change Username",
+							submitButtonOnClick: (e) => {
+								e.preventDefault();
+								logger.log("Change Username clicked");
+								const name = (document.getElementById("name") as HTMLInputElement)
+									.value;
+								logger.log("Name", name);
+								if (!name) {
 									return;
 								}
+
+								logger.log("Name", name.length);
 
 								if (name.length < 1 || name.length > 20) {
 									return;
 								}
 
-								if (code.length !== 6) {
-									return;
-								}
-
-								validatedWsClient?.current?.socket.emit("join_game", {
+								validatedWsClient?.current?.socket.emit("change_username", {
 									name: name,
-									code: code,
 								});
-							}}
-						/>
-					)}
+							}
+						}}
+					/>}
 				</div>
 			</div>
 		</>

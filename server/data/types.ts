@@ -1,4 +1,4 @@
-type GameSupportedLanguages = "en" | "sv";
+export type GameSupportedLanguages = "en" | "sv";
 
 export interface GameLocation {
 	id: Lowercase<string>;

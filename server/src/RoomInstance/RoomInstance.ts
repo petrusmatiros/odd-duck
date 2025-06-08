@@ -28,7 +28,7 @@ export class RoomInstance {
 		this.civilianRoles = new Map<string, number>();
 		this.gamePackId = null;
 		// Default timer set to 5 minutes
-		this.timer = new TimerInstance(0.1);
+		this.timer = new TimerInstance(5);
 		this.gameState = "in_lobby";
 	}
 	getId() {
@@ -70,6 +70,7 @@ export class RoomInstance {
 			(civ) => civ.getId() !== player.getId(),
 		);
 		this.spies = this.spies.filter((spy) => spy.getId() !== player.getId());
+		this.civilianRoles.delete(player.getId());
 	}
 	getPlayers() {
 		return this.players;
@@ -198,8 +199,15 @@ export class RoomInstance {
 		}
 		this.assignRolesToPlayers(roles);
 		this.setGameState("in_game");
-		// Pass socket event to the timer to emit time updates
-		this.timer.start({ socketNamespace, room, socketEvent });
+
+		// Set up the timer with the socket configuration
+		this.timer.setSocketConfig({
+			socketNamespace,
+			room,
+			socketEvent,
+		});
+		// Start timer
+		this.timer.start();
 	}
 	endGame() {
 		this.setGameState("in_lobby");
