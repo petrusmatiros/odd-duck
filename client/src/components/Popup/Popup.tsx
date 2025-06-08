@@ -16,6 +16,7 @@ import type { VariantProps } from "class-variance-authority";
 
 interface Props {
 	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
 	triggerButton?: {
 		buttonTitle: string;
 		buttonVariant: VariantProps<typeof Button>["variant"];
@@ -56,6 +57,7 @@ interface Props {
 
 export default function Popup({
 	open,
+	onOpenChange,
 	triggerButton,
 	dialog: { dialogTitle, dialogDescription },
 	inputs,
@@ -63,7 +65,7 @@ export default function Popup({
 	closeButton,
 }: Props) {
 	return (
-		<Dialog open={open}>
+		<Dialog open={open} onOpenChange={onOpenChange}>
 			{triggerButton?.buttonTitle && (
 				<DialogTrigger asChild>
 					{triggerButton?.buttonTitle && (

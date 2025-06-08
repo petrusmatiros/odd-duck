@@ -537,6 +537,11 @@ export default function Page() {
 					{playerToKick !== null && isHost === playerId && (
 						<Popup
 							open={playerToKick !== null}
+							onOpenChange={(open) => {
+								if (!open) {
+									setPlayerToKick(null);
+								}
+							}}
 							dialog={{
 								dialogTitle: `Kick ${playerToKick.name}`,
 								dialogDescription: "Are you sure you want to kick this player?",
@@ -554,7 +559,6 @@ export default function Page() {
 									});
 									setPlayerToKick(null);
 									toast("Player kicked from the lobby", {
-										description: `${playerToKick.name} has been kicked`,
 										richColors: true,
 									});
 								},
