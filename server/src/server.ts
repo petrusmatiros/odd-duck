@@ -201,7 +201,7 @@ function rejoinRoomsHelper(socket: Socket) {
 		 * 2. Player is already in room, has to rejoin
 		 */
 		// Not in the room, but is host of the room
-		if (!room.hasPlayer(player) && room.getHost().getId() === player.getId()) {
+		if (room.getHost().getId() === player.getId()) {
 			logger.log({
 				socketId: socket.id,
 				token: token,

@@ -15,6 +15,7 @@ import clsx from "clsx";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import TooltipHint from "@/components/Popup/TooltipHint";
+import capitalizeFirstLetter from "@/utils/string-utils";
 
 interface Player {
 	id: string;
@@ -214,15 +215,13 @@ export default function Page() {
 				setGameState(data.gameState);
 				setGamePacks(data.gamePacks);
 				setGamePack(data.gamePack || null);
-				setRole(data.playerRole || null);
+				setRole(
+					data.playerRole ? capitalizeFirstLetter(data.playerRole) : null,
+				);
 				setLocation(data.location || null);
 				setTimerState(data.timerState || null);
 
-				timeLeftElementSetter(
-					data.timeLeft,
-					data.timerState,
-					logger,
-				);
+				timeLeftElementSetter(data.timeLeft, data.timerState, logger);
 			},
 		);
 
@@ -283,6 +282,8 @@ export default function Page() {
 					code: roomCode,
 					locale: selectedLocale,
 				});
+				// Reset player card visibility
+				setPlayerCardVisible(false);
 			},
 		);
 
@@ -293,11 +294,7 @@ export default function Page() {
 				timerState: "stopped" | "running" | "paused" | null;
 			}) => {
 				setTimerState(data.timerState || null);
-				timeLeftElementSetter(
-					data.timeLeft,
-					data.timerState,
-					logger,
-				);
+				timeLeftElementSetter(data.timeLeft, data.timerState, logger);
 			},
 		);
 
@@ -326,6 +323,8 @@ export default function Page() {
 		sockRef.on("end_game_broadcast_all", (data: { toastMessage: string }) => {
 			logger.log("Game ended", data);
 			toast(data.toastMessage);
+			// Reset player card visibility
+			setPlayerCardVisible(false);
 		});
 
 		return () => {
@@ -667,17 +666,23 @@ export default function Page() {
 												: BASE_CONFIG.DUCK_IMAGE_SRC
 										}
 										alt="Duck"
-										width={100}
+										width={150}
 										className="h-auto rounded-md select-none"
 									/>
-									<div className="flex flex-col items-start justify-center gap-2">
-										<span>{`Role: ${role}`}</span>
+									<div className="flex flex-col items-start justify-center gap-2 w-full">
+										<p className="flex flex-col">
+											{"Role: "}
+											<span className="font-bold">{role}</span>
+										</p>
 										{/* Location should not be sent to spy players */}
-										<span>
-											{location
-												? `Location: ${location?.translations[selectedLocale].title}`
-												: "Location: ?"}
-										</span>
+										<p className="flex flex-col">
+											{"Location: "}
+											<span className="font-bold">
+												{location
+													? `${location?.translations[selectedLocale].title}`
+													: "?"}
+											</span>
+										</p>
 									</div>
 								</>
 							) : (
