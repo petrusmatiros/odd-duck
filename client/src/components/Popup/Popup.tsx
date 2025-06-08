@@ -95,8 +95,8 @@ export default function Popup({
 					)}
 				</DialogHeader>
 				<div className="grid gap-4 py-4">
-					{inputs?.map((input) => (
-						<div className="grid grid-cols-4 items-center gap-4" key={input.id}>
+					{inputs?.map((input) => {	
+						return <div className="grid grid-cols-4 items-center gap-4" key={input.id}>
 							{input.labelTitle && (
 								<label
 									htmlFor={input.id}
@@ -133,7 +133,7 @@ export default function Popup({
 								}}
 							/>
 						</div>
-					))}
+					})}
 				</div>
 				<DialogFooter>
 					{closeButton?.closeButtonTitle && (

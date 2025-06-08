@@ -1247,6 +1247,36 @@ validatedNamespace.on("connection", (socket) => {
 
 		const timerState = room.getTimer().getState();
 
+		if (!timerState) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "toggle_pause_game",
+				namespace: validatedNamespaceConstant,
+				message: "Timer state is not defined",
+				data: {
+					player: player,
+					room: room.getId(),
+				},
+			});
+			return;
+		}
+
+		if (timerState === "stopped") {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "toggle_pause_game",
+				namespace: validatedNamespaceConstant,
+				message: "Game timer is stopped, cannot toggle pause",
+				data: {
+					player: player,
+					room: room.getId(),
+				},
+			});
+			return;
+		}
+
 		// Toggle pause state
 		if (timerState === "paused") {
 			room.getTimer().resume();

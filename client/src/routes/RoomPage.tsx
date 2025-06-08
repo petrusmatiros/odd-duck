@@ -13,6 +13,8 @@ import unsplashImageUrl from "@/utils/img-utils";
 import { BASE_CONFIG } from "@/config/config";
 import clsx from "clsx";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import TooltipHint from "@/components/Popup/TooltipHint";
 
 interface Player {
 	id: string;
@@ -58,6 +60,31 @@ interface GamePack {
 	title: string;
 	locations: GameLocation[];
 	category: GameCategory;
+}
+
+function timeLeftElementSetter(
+	timeLeft: number | null,
+	timerState: "stopped" | "running" | "paused" | null,
+	logger: Logger,
+) {
+	const timeLeftElement = document.getElementById("timeLeft");
+	if (!timeLeftElement) {
+		logger.log("No time left element found, skipping update");
+		return;
+	}
+	if (timerState === "stopped") {
+		timeLeftElement.textContent = "Game has ended";
+		return;
+	}
+	if (timeLeft === null) {
+		timeLeftElement.textContent = "No timer";
+		return;
+	}
+	const minutes = Math.floor(timeLeft / 60);
+	const minutesWithLeadingZero = String(minutes).padStart(2, "0");
+	const seconds = timeLeft % 60;
+	const secondsWithLeadingZero = String(seconds).padStart(2, "0");
+	timeLeftElement.textContent = `Time left: ${minutesWithLeadingZero}:${secondsWithLeadingZero}`;
 }
 
 export default function Page() {
@@ -110,6 +137,8 @@ export default function Page() {
 			sockRef.emit("check_if_allowed_in_game", {
 				code: roomCode,
 			});
+			// Reset player card visibility
+			setPlayerCardVisible(false);
 		});
 		sockRef.on("disconnect", () => {
 			logger.log("Validated socket disconnected");
@@ -189,13 +218,11 @@ export default function Page() {
 				setLocation(data.location || null);
 				setTimerState(data.timerState || null);
 
-				const timeLeftElement = document.getElementById("timeLeft");
-				if (!timeLeftElement) {
-					logger.log("No time left element found, skipping update");
-					return;
-				}
-				timeLeftElement.textContent = `Time left: ${data.timeLeft !== null ? `${data.timeLeft} seconds` : "No timer"
-					}`;
+				timeLeftElementSetter(
+					data.timeLeft,
+					data.timerState,
+					logger,
+				);
 			},
 		);
 
@@ -265,14 +292,12 @@ export default function Page() {
 				timeLeft: number;
 				timerState: "stopped" | "running" | "paused" | null;
 			}) => {
-				logger.log("Timer response received", data);
 				setTimerState(data.timerState || null);
-				const timeLeftElement = document.getElementById("timeLeft");
-				if (!timeLeftElement) {
-					logger.log("No time left element found, skipping update");
-					return;
-				}
-				timeLeftElement.textContent = `Time left: ${data.timeLeft} seconds`;
+				timeLeftElementSetter(
+					data.timeLeft,
+					data.timerState,
+					logger,
+				);
 			},
 		);
 
@@ -391,420 +416,442 @@ export default function Page() {
 					}}
 				/>
 			) : gameState === "in_lobby" ? (
-				<div className="flex flex-col items-center justify-start min-h-screen gap-8 p-4">
-					{/* Lobby UI */}
-					<div className="flex flex-col items-center justify-center gap-2">
-						<Button variant="link" className="text-2xl font-bold">
-							<a href="/">Odd Duck</a>
-						</Button>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => {
-								copyToClipboard(roomCode);
-								toast("Room code copied to clipboard!", {
-									description: roomCode,
-									richColors: true,
-								});
-							}}
-						>
-							{roomCode}
-						</Button>
-					</div>
-
-					<div className="flex flex-col items-center justify-center gap-2">
-						{/* Only the host should be able to pick game packs */}
-						{isHost === playerId ? (
-							<div className="flex flex-col items-center justify-center gap-1">
-								<label htmlFor="game-pack-select">
-									Select a game pack to play:
-								</label>
-								<select
-									name="game-pack-select"
-									id="game-pack-select"
-									disabled={isHost !== playerId}
-									className="w-full max-w-2xl p-2 border border-gray-300 rounded-sm"
+				<div className="flex flex-col items-center justify-center w-full min-h-screen">
+					<div className="flex flex-col items-center justify-start min-h-screen gap-8 p-4 w-full max-w-md ">
+						{/* Lobby UI */}
+						<div className="flex flex-col items-center justify-center gap-2">
+							<Button variant="link" className="text-2xl font-bold">
+								<a href="/">Odd Duck</a>
+							</Button>
+							<TooltipHint tooltipText="Copy code">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => {
+										copyToClipboard(roomCode);
+										toast("Room code copied to clipboard!", {
+											description: roomCode,
+											richColors: true,
+										});
+									}}
 								>
-									{gamePacks?.map((pack) => {
-										return (
-											<option key={pack.id} value={pack.id}>
-												{pack.title}
-											</option>
-										);
-									})}
-								</select>
-							</div>
-						) : null}
+									{roomCode}
+								</Button>
+							</TooltipHint>
+						</div>
 
-						{/* Only the host should be able to adjust the duration */}
+						<div className="flex flex-col items-center justify-center gap-2">
+							{/* Only the host should be able to pick game packs */}
+							{isHost === playerId ? (
+								<div className="flex flex-col items-center justify-center gap-1">
+									<label htmlFor="game-pack-select">
+										Select a game pack to play:
+									</label>
+									<select
+										name="game-pack-select"
+										id="game-pack-select"
+										disabled={isHost !== playerId}
+										className="w-full p-2 border border-gray-300 rounded-sm"
+									>
+										{gamePacks?.map((pack) => {
+											return (
+												<option key={pack.id} value={pack.id}>
+													{pack.title}
+												</option>
+											);
+										})}
+									</select>
+								</div>
+							) : null}
+
+							{/* Only the host should be able to adjust the duration */}
+							{isHost === playerId ? (
+								<div className="flex flex-col items-center justify-center gap-1">
+									<label htmlFor="game-duration-select">
+										Select game duration:
+									</label>
+									<select
+										name="game-duration-select"
+										id="game-duration-select"
+										className="w-full p-2 border border-gray-300 rounded-sm"
+									>
+										<option value="1">1 minute</option>
+										<option value="2">2 minutes</option>
+										<option value="3">3 minutes</option>
+										<option value="4">4 minutes</option>
+										<option value="5">5 minutes</option>
+										<option value="7">7 minutes</option>
+										<option value="10">10 minutes</option>
+										<option value="15">15 minutes</option>
+									</select>
+								</div>
+							) : null}
+						</div>
+
+						{/* Only the host should be able to start the game */}
 						{isHost === playerId ? (
-							<div className="flex flex-col items-center justify-center gap-1">
-								<label htmlFor="game-duration-select">
-									Select game duration:
-								</label>
-								<select
-									name="game-duration-select"
-									id="game-duration-select"
-									className="w-full max-w-2xl p-2 border border-gray-300 rounded-sm"
-								>
-									<option value="1">1 minute</option>
-									<option value="2">2 minutes</option>
-									<option value="3">3 minutes</option>
-									<option value="4">4 minutes</option>
-									<option value="5">5 minutes</option>
-									<option value="7">7 minutes</option>
-									<option value="10">10 minutes</option>
-									<option value="15">15 minutes</option>
-								</select>
-							</div>
-						) : null}
-					</div>
-
-					{/* Only the host should be able to start the game */}
-					{isHost === playerId ? (
-						<Button
-							type="button"
-							disabled={playersInLobby.length < 2}
-							onClick={() => {
-								if (!validatedWsClient?.current) {
-									return;
-								}
-								const currentGamePackSelected = document.getElementById(
-									"game-pack-select",
-								) as HTMLSelectElement;
-								if (!currentGamePackSelected) {
-									toast("Please select a game pack first!", {
-										description:
-											"You must select a game pack to start the game.",
-										richColors: true,
-									});
-									return;
-								}
-								if (!currentGamePackSelected.value) {
-									toast("Please select a game pack first!", {
-										description:
-											"You must select a game pack to start the game.",
-										richColors: true,
-									});
-									return;
-								}
-
-								const currentDurationSelected = document.getElementById(
-									"game-duration-select",
-								) as HTMLSelectElement;
-								if (!currentDurationSelected) {
-									toast("Please select a game duration first!", {
-										description:
-											"You must select a game duration to start the game.",
-										richColors: true,
-									});
-									return;
-								}
-								if (!currentDurationSelected.value) {
-									toast("Please select a game duration first!", {
-										description:
-											"You must select a game duration to start the game.",
-										richColors: true,
-									});
-									return;
-								}
-								const durationInMinutes = Number.parseInt(
-									currentDurationSelected.value,
-								);
-								if (Number.isNaN(durationInMinutes)) {
-									toast("Please select a valid game duration!", {
-										description:
-											"You must select a valid game duration to start the game.",
-										richColors: true,
-									});
-									return;
-								}
-								console.log(
-									durationInMinutes
-								);
-								validatedWsClient?.current?.socket.emit("start_game", {
-									code: roomCode,
-									gamePackId: currentGamePackSelected.value,
-									durationInMinutes: durationInMinutes,
-								});
-							}}
-						>
-							Start
-						</Button>
-					) : null}
-
-					{/* Only the host should be able to kick players */}
-					{playerToKick !== null && isHost === playerId && (
-						<Popup
-							open={playerToKick !== null}
-							onOpenChange={(open) => {
-								if (!open) {
-									setPlayerToKick(null);
-								}
-							}}
-							dialog={{
-								dialogTitle: `Kick ${playerToKick.name}`,
-								dialogDescription: "Are you sure you want to kick this player?",
-							}}
-							submitButton={{
-								submitButtonTitle: `Kick ${playerToKick.name}`,
-								submitButtonOnClick: (e) => {
-									e.preventDefault();
+							<Button
+								type="button"
+								disabled={playersInLobby.length < 2}
+								onClick={() => {
 									if (!validatedWsClient?.current) {
 										return;
 									}
-									validatedWsClient?.current.socket.emit("kick_player", {
-										code: roomCode,
-										playerId: playerToKick.id,
-									});
-									setPlayerToKick(null);
-									toast("Player kicked from the lobby", {
-										richColors: true,
-									});
-								},
-							}}
-							closeButton={{
-								closeButtonTitle: "Cancel",
-								closeButtonOnClick: (e) => {
-									e.preventDefault();
-									setPlayerToKick(null);
-									toast("Kick player cancelled", {
-										richColors: true,
-									});
-								},
-							}}
-						/>
-					)}
+									const currentGamePackSelected = document.getElementById(
+										"game-pack-select",
+									) as HTMLSelectElement;
+									if (!currentGamePackSelected) {
+										toast("Please select a game pack first!", {
+											description:
+												"You must select a game pack to start the game.",
+											richColors: true,
+										});
+										return;
+									}
+									if (!currentGamePackSelected.value) {
+										toast("Please select a game pack first!", {
+											description:
+												"You must select a game pack to start the game.",
+											richColors: true,
+										});
+										return;
+									}
 
-					{/* Players in the lobby */}
-					<div className="flex flex-col items-center w-full justify-start gap-4 p-4">
-						{playersInLobby?.map((player) => {
-							return (
-								<div
-									key={player.id}
-									className="cursor-pointer flex flex-row items-center justify-between w-full max-w-2xl p-4 border-b border-gray-300"
-									onClick={() => {
-										// Only allow popup to kick if the player is host
-										if (isHost !== playerId) {
+									const currentDurationSelected = document.getElementById(
+										"game-duration-select",
+									) as HTMLSelectElement;
+									if (!currentDurationSelected) {
+										toast("Please select a game duration first!", {
+											description:
+												"You must select a game duration to start the game.",
+											richColors: true,
+										});
+										return;
+									}
+									if (!currentDurationSelected.value) {
+										toast("Please select a game duration first!", {
+											description:
+												"You must select a game duration to start the game.",
+											richColors: true,
+										});
+										return;
+									}
+									const durationInMinutes = Number.parseInt(
+										currentDurationSelected.value,
+									);
+									if (Number.isNaN(durationInMinutes)) {
+										toast("Please select a valid game duration!", {
+											description:
+												"You must select a valid game duration to start the game.",
+											richColors: true,
+										});
+										return;
+									}
+									console.log(durationInMinutes);
+									validatedWsClient?.current?.socket.emit("start_game", {
+										code: roomCode,
+										gamePackId: currentGamePackSelected.value,
+										durationInMinutes: durationInMinutes,
+									});
+								}}
+							>
+								Start
+							</Button>
+						) : null}
+
+						{/* Only the host should be able to kick players */}
+						{playerToKick !== null && isHost === playerId && (
+							<Popup
+								open={playerToKick !== null}
+								onOpenChange={(open) => {
+									if (!open) {
+										setPlayerToKick(null);
+									}
+								}}
+								dialog={{
+									dialogTitle: `Kick ${playerToKick.name}`,
+									dialogDescription:
+										"Are you sure you want to kick this player?",
+								}}
+								submitButton={{
+									submitButtonTitle: `Kick ${playerToKick.name}`,
+									submitButtonOnClick: (e) => {
+										e.preventDefault();
+										if (!validatedWsClient?.current) {
 											return;
 										}
-										setPlayerToKick(player);
-									}}
-									onKeyUp={() => {
-										// Only allow popup to kick if the player is host
-										if (isHost !== playerId) {
-											return;
-										}
-										setPlayerToKick(player);
-									}}
-								>
-									<p
+										validatedWsClient?.current.socket.emit("kick_player", {
+											code: roomCode,
+											playerId: playerToKick.id,
+										});
+										setPlayerToKick(null);
+										toast("Player kicked from the lobby", {
+											richColors: true,
+										});
+									},
+								}}
+								closeButton={{
+									closeButtonTitle: "Cancel",
+									closeButtonOnClick: (e) => {
+										e.preventDefault();
+										setPlayerToKick(null);
+										toast("Kick player cancelled", {
+											richColors: true,
+										});
+									},
+								}}
+							/>
+						)}
+
+						{/* Players in the lobby */}
+						<div className="flex flex-col items-center w-full justify-start gap-4 p-4">
+							{playersInLobby?.map((player) => {
+								return (
+									<div
+										key={player.id}
 										className={clsx(
-											"text-xl",
-											playerId === player.id ? "font-bold" : "",
+											"flex flex-row items-center justify-between w-full p-4 border-b border-gray-300",
+											isHost === playerId ? "cursor-pointer" : "",
 										)}
+										onClick={() => {
+											// Only allow popup to kick if the player is host
+											if (isHost !== playerId) {
+												return;
+											}
+											setPlayerToKick(player);
+										}}
+										onKeyUp={() => {
+											// Only allow popup to kick if the player is host
+											if (isHost !== playerId) {
+												return;
+											}
+											setPlayerToKick(player);
+										}}
 									>
-										{player.name}
-									</p>
-									{isHost && player.id === isHost ? (
-										<span>{"(Host)"}</span>
-									) : null}
-								</div>
-							);
-						})}
+										<p
+											className={clsx(
+												"text-xl",
+												playerId === player.id ? "font-bold" : "",
+											)}
+										>
+											{player.name}
+										</p>
+										{isHost && player.id === isHost ? (
+											<span>{"(Host)"}</span>
+										) : null}
+									</div>
+								);
+							})}
+						</div>
 					</div>
 				</div>
 			) : (
-				<div className="flex flex-col items-center justify-center min-h-screen gap-8">
-					{/* Role Card */}
-					<div
-						className="cursor-pointer flex flex-row items-center justify-start gap-4 p-4 rounded-md bg-gray-100 min-w-md h-48"
-						onClick={() => {
-							setPlayerCardVisible(!playerCardVisible);
-						}}
-						onKeyUp={() => {
-							setPlayerCardVisible(!playerCardVisible);
-						}}
-					>
-						{playerCardVisible ? (
-							<>
-								<img
-									src={
-										role === "spy"
-											? BASE_CONFIG.ODD_DUCK_OPEN_EYES_SRC
-											: BASE_CONFIG.DUCK_IMAGE_SRC
-									}
-									alt="Duck"
-									width={100}
-									className="h-auto rounded-md"
+				<div className="flex flex-col items-center justify-center w-full min-h-screen">
+					<div className="flex flex-col items-center justify-center min-h-screen gap-8 p-4 max-w-md">
+						{/* Role Card */}
+						<div
+							className="cursor-pointer flex flex-row items-center justify-center gap-4 p-4 rounded-md bg-gray-100 min-w-full h-48"
+							onClick={() => {
+								setPlayerCardVisible(!playerCardVisible);
+							}}
+							onKeyUp={() => {
+								setPlayerCardVisible(!playerCardVisible);
+							}}
+						>
+							{playerCardVisible ? (
+								<>
+									<img
+										src={
+											role === "spy"
+												? BASE_CONFIG.ODD_DUCK_OPEN_EYES_SRC
+												: BASE_CONFIG.DUCK_IMAGE_SRC
+										}
+										alt="Duck"
+										width={100}
+										className="h-auto rounded-md select-none"
+									/>
+									<div className="flex flex-col items-start justify-center gap-2">
+										<span>{`Role: ${role}`}</span>
+										{/* Location should not be sent to spy players */}
+										<span>
+											{location
+												? `Location: ${location?.translations[selectedLocale].title}`
+												: "Location: ?"}
+										</span>
+									</div>
+								</>
+							) : (
+								<span className="flex min-w-full h-48 text-9xl font-bold items-center justify-center">
+									?
+								</span>
+							)}
+						</div>
+
+						{/* timer */}
+						<div
+							id="timeLeft"
+							className={clsx(
+								"tabular-nums",
+								timerState === "paused" ? "opacity-25" : "",
+							)}
+						>
+							{gameState === "in_game" && timerState === "stopped"
+								? "Game has ended"
+								: "No timer"}
+						</div>
+
+						{/* Host admin UI */}
+						{isHost === playerId && (
+							<div className="flex flex-row items-center justify-between gap-2">
+								<Popup
+									triggerButton={{
+										buttonVariant: "default",
+										buttonTitle: "End Game",
+										triggerButtonClick: () => {
+											logger.log("End Game clicked");
+										},
+									}}
+									dialog={{
+										dialogTitle: "End Game",
+										dialogDescription: "Are you sure you want to end the game?",
+									}}
+									submitButton={{
+										submitButtonTitle: "End Game",
+										submitButtonOnClick: (e) => {
+											e.preventDefault();
+											logger.log("End Game clicked");
+
+											validatedWsClient?.current?.socket.emit("end_game", {
+												code: roomCode,
+											});
+										},
+									}}
 								/>
-								<div className="flex flex-col items-start justify-center gap-2">
-									<span>{`Role: ${role}`}</span>
-									{/* Location should not be sent to spy players */}
-									<span>
-										{location
-											? `Location: ${location?.translations[selectedLocale].title}`
-											: "Location: ?"}
-									</span>
-								</div>
-							</>
-						) : (
-							<span className="min-w-md h-48">?</span>
+								<Button
+									type="button"
+									variant="secondary"
+									disabled={timerState === "stopped"}
+									onClick={() => {
+										if (!validatedWsClient?.current) {
+											return;
+										}
+										validatedWsClient?.current.socket.emit(
+											"toggle_pause_game",
+											{
+												code: roomCode,
+											},
+										);
+									}}
+								>
+									{timerState === "paused" ? "Resume" : "Pause"}
+								</Button>
+							</div>
 						)}
-					</div>
 
-					{/* timer */}
-					<div
-						id="timeLeft"
-						className={clsx("tabular-nums", timerState === "paused" ? "opacity-25" : "")}
-					>
-						{gameState === "in_game" && timerState === "stopped" ? "Game has ended" : "No timer"}
-					</div>
-
-					{/* Host admin UI */}
-					<div className="flex flex-row items-center justify-between gap-2">
-						<Popup
-							triggerButton={{
-								buttonVariant: "default",
-								buttonTitle: "End Game",
-								triggerButtonClick: () => {
-									logger.log("End Game clicked");
-								},
-							}}
-							dialog={{
-								dialogTitle: "End Game",
-								dialogDescription: "Are you sure you want to end the game?",
-							}}
-							submitButton={{
-								submitButtonTitle: "End Game",
-								submitButtonOnClick: (e) => {
-									e.preventDefault();
-									logger.log("End Game clicked");
-
-									validatedWsClient?.current?.socket.emit("end_game", {
-										code: roomCode,
-									});
-								},
-							}}
-						/>
 						<Button
 							type="button"
 							variant="secondary"
 							onClick={() => {
+								const localeToToggle = selectedLocale === "en" ? "sv" : "en";
 								if (!validatedWsClient?.current) {
 									return;
 								}
-								validatedWsClient?.current.socket.emit("toggle_pause_game", {
+								validatedWsClient?.current?.socket.emit("get_game_state", {
 									code: roomCode,
+									locale: localeToToggle,
 								});
-								toast("Game paused", {
-									richColors: true,
-								});
+								setSelectedLocale(localeToToggle);
+								toast(
+									`Language switched to ${selectedLocale === "en" ? "Swedish" : "English"}`,
+									{
+										richColors: true,
+									},
+								);
 							}}
 						>
-							Pause
+							Switch to {selectedLocale === "en" ? "sv" : "en"}
 						</Button>
-					</div>
 
-					{/* players */}
-					<div className="grid grid-cols-3 gap-4">
-						{playersInLobby?.map((player) => {
-							return (
-								<div
-									key={player.id}
-									className="cursor-pointer flex flex-col items-center justify-start max-w-2xl p-4 border-2 rounded-md border-gray-300"
-									onClick={(e) => {
-										e.currentTarget.classList.toggle("line-through");
-										e.currentTarget.classList.toggle("opacity-25");
-									}}
-									onKeyUp={(e) => {
-										e.currentTarget.classList.toggle("line-through");
-										e.currentTarget.classList.toggle("opacity-25");
-									}}
-								>
-									<img
-										alt={`player-${player.id}`}
-										src={BASE_CONFIG.DUCK_IMAGE_SRC}
-										width={100}
-										className="h-auto rounded-md"
-									/>
-									<p
-										className={clsx(
-											"text-xl",
-											playerId === player.id ? "font-bold" : "",
-										)}
-									>
-										{player.name}
-									</p>
-									{isHost && player.id === isHost ? (
-										<span>{"(Host)"}</span>
-									) : null}
-								</div>
-							);
-						})}
-					</div>
+						<Separator />
 
-					{/* all locations in the game pack */}
-					<div className="grid grid-cols-3 gap-4">
-						{gamePack?.locations.map((location) => {
-							return (
-								<div
-									key={location.id}
-									className="cursor-pointer flex flex-col items-start justify-start w-full max-w-2xl p-4 border-2 rounded-md border-gray-300 gap-2"
-									onClick={(e) => {
-										e.currentTarget.classList.toggle("line-through");
-										e.currentTarget.classList.toggle("opacity-25");
-									}}
-									onKeyUp={(e) => {
-										e.currentTarget.classList.toggle("line-through");
-										e.currentTarget.classList.toggle("opacity-25");
-									}}
-								>
-									<img
-										src={unsplashImageUrl(location.img_url)}
-										width={250}
-										alt={location.translations[selectedLocale].title}
-										className="h-auto rounded-sm"
-									/>
+						{/* players */}
+						<div className="grid grid-cols-3 gap-2">
+							{playersInLobby?.map((player) => {
+								return (
 									<div
-										className="flex flex-col items-start justify-center"
-										id={`${location.id}-text`}
+										key={player.id}
+										className="cursor-pointer flex flex-col items-center justify-start p-2 px-4 border-2 rounded-md border-gray-300"
+										onClick={(e) => {
+											e.currentTarget.classList.toggle("line-through");
+											e.currentTarget.classList.toggle("opacity-25");
+										}}
+										onKeyUp={(e) => {
+											e.currentTarget.classList.toggle("line-through");
+											e.currentTarget.classList.toggle("opacity-25");
+										}}
 									>
-										<h2 className="text-xl font-bold">
-											{location.translations[selectedLocale].title}
-										</h2>
-										<p className="text-gray-700">
-											{location.translations[selectedLocale].description}
+										<img
+											alt={`player-${player.id}`}
+											src={BASE_CONFIG.DUCK_IMAGE_SRC}
+											width={75}
+											className="h-auto rounded-md select-none"
+										/>
+										<p
+											className={clsx(
+												"text-xl",
+												playerId === player.id ? "font-bold" : "",
+											)}
+										>
+											{player.name}
 										</p>
+										{isHost && player.id === isHost ? (
+											<span>{"(Host)"}</span>
+										) : null}
 									</div>
-								</div>
-							);
-						})}
-					</div>
+								);
+							})}
+						</div>
 
-					<button
-						type="button"
-						className="cursor-pointer font-bold bg-gray-500 text-white px-4 py-2 rounded-sm"
-						onClick={() => {
-							const localeToToggle = selectedLocale === "en" ? "sv" : "en";
-							if (!validatedWsClient?.current) {
-								return;
-							}
-							validatedWsClient?.current?.socket.emit("get_game_state", {
-								code: roomCode,
-								locale: localeToToggle,
-							});
-							setSelectedLocale(localeToToggle);
-							toast(
-								`Locale switched to ${selectedLocale === "en" ? "Swedish" : "English"}`,
-								{
-									richColors: true,
-								},
-							);
-						}}
-					>
-						Switch to {selectedLocale === "en" ? "sv" : "en"}
-					</button>
+						<Separator />
+
+						{/* all locations in the game pack */}
+						<div className="grid grid-cols-1 gap-2">
+							{gamePack?.locations.map((location) => {
+								return (
+									<div
+										key={location.id}
+										className="cursor-pointer flex flex-col items-center justify-center w-full p-4 border-2 rounded-md border-gray-300 gap-2"
+										onClick={(e) => {
+											e.currentTarget.classList.toggle("line-through");
+											e.currentTarget.classList.toggle("opacity-25");
+										}}
+										onKeyUp={(e) => {
+											e.currentTarget.classList.toggle("line-through");
+											e.currentTarget.classList.toggle("opacity-25");
+										}}
+									>
+										<img
+											src={unsplashImageUrl(location.img_url)}
+											width={250}
+											alt={location.translations[selectedLocale].title}
+											className="h-auto rounded-sm aspect-3/2 object-cover select-none"
+										/>
+										<div
+											className="flex flex-col items-center justify-center text-center"
+											id={`${location.id}-text`}
+										>
+											<h2 className="font-bold">
+												{location.translations[selectedLocale].title}
+											</h2>
+											<p className="text-sm">
+												{location.translations[selectedLocale].description}
+											</p>
+										</div>
+									</div>
+								);
+							})}
+						</div>
+					</div>
 				</div>
 			)}
 		</>
