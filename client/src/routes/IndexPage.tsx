@@ -108,7 +108,7 @@ export default function Index() {
 		sockRef.on(
 			"check_if_already_created_game_before_response",
 			(data: { roomCode: string; toastMessage: string }) => {
-				logger.log("Entered game", data.roomCode);
+				logger.log("Already a host of a game", data.roomCode);
 				toast(data.toastMessage);
 				window.location.href = `/room/${data.roomCode}`;
 			},
@@ -171,6 +171,8 @@ export default function Index() {
 								logger.log("Create game clicked");
 								// play sound
 								sound_quack.play();
+	
+								// Check if already created a game before
 								validatedWsClient?.current?.socket.emit(
 									"check_if_already_created_game_before",
 								);
@@ -237,6 +239,9 @@ export default function Index() {
 									logger.log("Join game clicked");
 									validatedWsClient?.current?.socket.emit(
 										"check_if_player_name_exists",
+									);
+									validatedWsClient?.current?.socket.emit(
+										"get_current_username",
 									);
 									// play sound
 									sound_quack.play();

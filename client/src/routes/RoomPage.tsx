@@ -72,13 +72,14 @@ export default function Page() {
 	const [gamePack, setGamePack] = useState<GamePack | null>(null);
 	const [location, setLocation] = useState<GameLocation | null>(null);
 	const [role, setRole] = useState<"spy" | string | null>(null);
+	const [playerCardVisible, setPlayerCardVisible] = useState(false);
 	const [isHost, setIsHost] = useState<string | null>(null);
 	const [selectedLocale, setSelectedLocale] =
 		useState<GameSupportedLanguages>("en");
 	const [playerToKick, setPlayerToKick] = useState<Player | null>(null);
-	const [timerState, setTimerState] = useState<"stopped" | "running" | "paused" | null>(
-		null,
-	);
+	const [timerState, setTimerState] = useState<
+		"stopped" | "running" | "paused" | null
+	>(null);
 
 	const roomCode = window.location.pathname.split("/").pop();
 	const logger = new Logger(`client/room/${roomCode}`);
@@ -225,9 +226,17 @@ export default function Page() {
 
 		sockRef.on(
 			"player_disconnected_broadcast_all",
-			(data: { player: Player; playersInLobby: Player[], isHost?: boolean }) => {
+			(data: {
+				player: Player;
+				playersInLobby: Player[];
+				isHost?: boolean;
+			}) => {
 				logger.log("Player left game", data);
-				toast(isHost ? `${data.player.name} (host) has left the game!` : `${data.player.name} has left the game!`);
+				toast(
+					isHost
+						? `${data.player.name} (host) has left the game!`
+						: `${data.player.name} has left the game!`,
+				);
 				setPlayersInLobby(data.playersInLobby || []);
 			},
 		);
@@ -254,8 +263,10 @@ export default function Page() {
 			"timer_response_broadcast_all",
 			(data: {
 				timeLeft: number;
+				timerState: "stopped" | "running" | "paused" | null;
 			}) => {
 				logger.log("Timer response received", data);
+				setTimerState(data.timerState || null);
 				const timeLeftElement = document.getElementById("timeLeft");
 				if (!timeLeftElement) {
 					logger.log("No time left element found, skipping update");
@@ -269,30 +280,28 @@ export default function Page() {
 			"toggle_pause_game_broadcast_all",
 			(data: {
 				toastMessage: string;
+				timerState: "stopped" | "running" | "paused" | null;
 			}) => {
 				toast(data.toastMessage, {
 					richColors: true,
 				});
 				logger.log("Game paused/resumed", data);
-			},
-		)
-
-		sockRef.on("kick_player_response", (data: { toastMessage: string }) => {
-			logger.log("Player kicked", data);
-			toast("Player kicked from the lobby!", {
-				richColors: true,
-			});
-			window.location.href = "/";
-		});
-
-
-		sockRef.on(
-			"end_game_broadcast_all",
-			(data: { toastMessage: string }) => {
-				logger.log("Game ended", data);
-				toast(data.toastMessage);
+				setTimerState(data.timerState || null);
 			},
 		);
+
+		sockRef.on("kick_player_response", (data: { toastMessage: string }) => {
+			logger.log("You've been kicked from the lobby!", data);
+			toast("You've been kicked from the lobby!", {
+				richColors: true,
+			});
+			// window.location.href = "/";
+		});
+
+		sockRef.on("end_game_broadcast_all", (data: { toastMessage: string }) => {
+			logger.log("Game ended", data);
+			toast(data.toastMessage);
+		});
 
 		return () => {
 			logger.log("Cleaning up");
@@ -329,7 +338,7 @@ export default function Page() {
 					open={isAllowedInRoom && !hasJoinedRoom}
 					dialog={{
 						dialogTitle: "Join Game",
-						dialogDescription: "What be your name veary traveller?"
+						dialogDescription: "What be your name veary traveller?",
 					}}
 					inputs={[
 						{
@@ -378,14 +387,16 @@ export default function Page() {
 								name: name,
 								code: roomCode,
 							});
-						}
+						},
 					}}
 				/>
 			) : gameState === "in_lobby" ? (
 				<div className="flex flex-col items-center justify-start min-h-screen gap-8 p-4">
 					{/* Lobby UI */}
 					<div className="flex flex-col items-center justify-center gap-2">
-						<Button variant="link" className="text-2xl font-bold"><a href="/">Odd Duck</a></Button>
+						<Button variant="link" className="text-2xl font-bold">
+							<a href="/">Odd Duck</a>
+						</Button>
 						<Button
 							type="button"
 							variant="outline"
@@ -428,9 +439,7 @@ export default function Page() {
 						{/* Only the host should be able to adjust the duration */}
 						{isHost === playerId ? (
 							<div className="flex flex-col items-center justify-center gap-1">
-								<label
-									htmlFor="game-duration-select"
-								>
+								<label htmlFor="game-duration-select">
 									Select game duration:
 								</label>
 								<select
@@ -502,7 +511,7 @@ export default function Page() {
 								const durationInMinutes = Number.parseInt(
 									currentDurationSelected.value,
 								);
-								if (Number.isNaN(durationInMinutes) || durationInMinutes < 1) {
+								if (Number.isNaN(durationInMinutes)) {
 									toast("Please select a valid game duration!", {
 										description:
 											"You must select a valid game duration to start the game.",
@@ -510,6 +519,9 @@ export default function Page() {
 									});
 									return;
 								}
+								console.log(
+									durationInMinutes
+								);
 								validatedWsClient?.current?.socket.emit("start_game", {
 									code: roomCode,
 									gamePackId: currentGamePackSelected.value,
@@ -527,9 +539,8 @@ export default function Page() {
 							open={playerToKick !== null}
 							dialog={{
 								dialogTitle: `Kick ${playerToKick.name}`,
-								dialogDescription: "Are you sure you want to kick this player?"
+								dialogDescription: "Are you sure you want to kick this player?",
 							}}
-
 							submitButton={{
 								submitButtonTitle: `Kick ${playerToKick.name}`,
 								submitButtonOnClick: (e) => {
@@ -542,10 +553,11 @@ export default function Page() {
 										playerId: playerToKick.id,
 									});
 									setPlayerToKick(null);
-									toast("Player kicked from the lobby!", {
+									toast("Player kicked from the lobby", {
+										description: `${playerToKick.name} has been kicked`,
 										richColors: true,
 									});
-								}
+								},
 							}}
 							closeButton={{
 								closeButtonTitle: "Cancel",
@@ -555,7 +567,7 @@ export default function Page() {
 									toast("Kick player cancelled", {
 										richColors: true,
 									});
-								}
+								},
 							}}
 						/>
 					)}
@@ -582,7 +594,14 @@ export default function Page() {
 										setPlayerToKick(player);
 									}}
 								>
-									<p className={clsx("text-xl", playerId === player.id ? "font-bold" : "")}>{player.name}</p>
+									<p
+										className={clsx(
+											"text-xl",
+											playerId === player.id ? "font-bold" : "",
+										)}
+									>
+										{player.name}
+									</p>
 									{isHost && player.id === isHost ? (
 										<span>{"(Host)"}</span>
 									) : null}
@@ -594,11 +613,49 @@ export default function Page() {
 			) : (
 				<div className="flex flex-col items-center justify-center min-h-screen gap-8">
 					{/* Role Card */}
-					<div>{`Your role: ${role}`}</div>
-					<div>{location?.translations[selectedLocale].title}</div>
+					<div
+						className="cursor-pointer flex flex-row items-center justify-start gap-4 p-4 rounded-md bg-gray-100 min-w-md h-48"
+						onClick={() => {
+							setPlayerCardVisible(!playerCardVisible);
+						}}
+						onKeyUp={() => {
+							setPlayerCardVisible(!playerCardVisible);
+						}}
+					>
+						{playerCardVisible ? (
+							<>
+								<img
+									src={
+										role === "spy"
+											? BASE_CONFIG.ODD_DUCK_OPEN_EYES_SRC
+											: BASE_CONFIG.DUCK_IMAGE_SRC
+									}
+									alt="Duck"
+									width={100}
+									className="h-auto rounded-md"
+								/>
+								<div className="flex flex-col items-start justify-center gap-2">
+									<span>{`Role: ${role}`}</span>
+									{/* Location should not be sent to spy players */}
+									<span>
+										{location
+											? `Location: ${location?.translations[selectedLocale].title}`
+											: "Location: ?"}
+									</span>
+								</div>
+							</>
+						) : (
+							<span className="min-w-md h-48">?</span>
+						)}
+					</div>
 
 					{/* timer */}
-					<div id="timeLeft">{"No timer"}</div>
+					<div
+						id="timeLeft"
+						className={clsx("tabular-nums", timerState === "paused" ? "opacity-25" : "")}
+					>
+						{gameState === "in_game" && timerState === "stopped" ? "Game has ended" : "No timer"}
+					</div>
 
 					{/* Host admin UI */}
 					<div className="flex flex-row items-center justify-between gap-2">
@@ -608,11 +665,11 @@ export default function Page() {
 								buttonTitle: "End Game",
 								triggerButtonClick: () => {
 									logger.log("End Game clicked");
-								}
+								},
 							}}
 							dialog={{
 								dialogTitle: "End Game",
-								dialogDescription: "Are you sure you want to end the game?"
+								dialogDescription: "Are you sure you want to end the game?",
 							}}
 							submitButton={{
 								submitButtonTitle: "End Game",
@@ -623,24 +680,27 @@ export default function Page() {
 									validatedWsClient?.current?.socket.emit("end_game", {
 										code: roomCode,
 									});
-								}
+								},
 							}}
 						/>
-						<Button type="button" variant="secondary" onClick={() => {
-							if (!validatedWsClient?.current) {
-								return;
-							}
-							validatedWsClient?.current.socket.emit("toggle_pause_game", {
-								code: roomCode,
-							});
-							toast("Game paused", {
-								richColors: true,
-							});
-						}}>Pause</Button>
+						<Button
+							type="button"
+							variant="secondary"
+							onClick={() => {
+								if (!validatedWsClient?.current) {
+									return;
+								}
+								validatedWsClient?.current.socket.emit("toggle_pause_game", {
+									code: roomCode,
+								});
+								toast("Game paused", {
+									richColors: true,
+								});
+							}}
+						>
+							Pause
+						</Button>
 					</div>
-
-					{/* location */}
-					{location && <div>{location.translations[selectedLocale].title}</div>}
 
 					{/* players */}
 					<div className="grid grid-cols-3 gap-4">

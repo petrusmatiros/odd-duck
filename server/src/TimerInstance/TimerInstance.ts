@@ -83,11 +83,22 @@ export class TimerInstance {
 				.to(this.timerSocketConfig.room.getId())
 				.emit(this.timerSocketConfig.socketEvent, {
 					timeLeft: this.getTimeLeft(),
+					timerState: this.getState(),
 				});
 
 			if (this.getTimeLeft() <= 0) {
+				// Set the timer state to stopped and emit the final state
+				this.setState("stopped");
+				this.timerSocketConfig.socketNamespace
+					.to(this.timerSocketConfig.room.getId())
+					.emit(this.timerSocketConfig.socketEvent, {
+						timeLeft: this.getTimeLeft(),
+						timerState: this.getState(),
+					});
 				this.stop();
 				console.log(`Timer ${this.id} has finished.`);
+				// End early to prevent further incrementation of elapsed time
+				return;
 			}
 			this.elapsedTimeInSeconds += 1;
 		}, 1000); // 1 second interval

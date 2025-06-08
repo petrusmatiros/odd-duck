@@ -1137,10 +1137,31 @@ validatedNamespace.on("connection", (socket) => {
 			});
 			return;
 		}
+
+		// Check if the player to kick is in the room
+		if (!room.hasPlayer(playerToKick)) {
+			logger.log({
+				socketId: socket.id,
+				token: token,
+				event: "kick_player",
+				namespace: validatedNamespaceConstant,
+				message: "Player to kick is not in the room",
+				data: {
+					playerId: data.playerId,
+					room: room.getId(),
+				},
+			});
+			return;
+		}
+		// If all checks pass, kick the player from the room
 		room.removePlayer(playerToKick);
+
+		// Emit to the player that they have been kicked
 		validatedNamespace.to(playerToKick.getId()).emit("kick_player_response", {
 			toastMessage: `You have been kicked from the room ${data.code}`,
 		});
+
+		// Emit to all players in the room that the player has left
 		validatedNamespace
 			.to(room.getId())
 			.emit("player_disconnected_broadcast_all", {
@@ -1243,7 +1264,8 @@ validatedNamespace.on("connection", (socket) => {
 			validatedNamespace
 				.to(room.getId())
 				.emit("toggle_pause_game_broadcast_all", {
-					toastMessage: `The game has resumed by the host ${player.getName()}`,
+					toastMessage: "The game has been resumed",
+					timerState: room.getTimer().getState(),
 				});
 		} else if (timerState === "running") {
 			room.getTimer().pause();
@@ -1261,7 +1283,8 @@ validatedNamespace.on("connection", (socket) => {
 			validatedNamespace
 				.to(room.getId())
 				.emit("toggle_pause_game_broadcast_all", {
-					toastMessage: `The game has paused by the host ${player.getName()}`,
+					toastMessage: "The game has been paused",
+					timerState: room.getTimer().getState(),
 				});
 		} else {
 			logger.log({
@@ -1465,20 +1488,6 @@ validatedNamespace.on("connection", (socket) => {
 					return;
 				}
 
-				locationObject =
-					gamePackObject.locations.find((loc) => loc.id === locationId) ?? null;
-
-				if (!locationObject) {
-					logger.log({
-						socketId: socket.id,
-						token: token,
-						event: "get_game_state",
-						namespace: validatedNamespaceConstant,
-						message: "No location object found for location id",
-						data: data,
-					});
-					return;
-				}
 				if (room.hasSpy(player)) {
 					playerRole = "spy";
 				} else {
@@ -1509,6 +1518,23 @@ validatedNamespace.on("connection", (socket) => {
 						return;
 					}
 
+					// Location object is asigned a value here, so the spy will not have a location object
+					locationObject =
+						gamePackObject.locations.find((loc) => loc.id === locationId) ??
+						null;
+
+					if (!locationObject) {
+						logger.log({
+							socketId: socket.id,
+							token: token,
+							event: "get_game_state",
+							namespace: validatedNamespaceConstant,
+							message: "No location object found for location id",
+							data: data,
+						});
+						return;
+					}
+
 					const foundPlayerRole =
 						locationObject.translations[data.locale].roles[playerRoleIndex];
 
@@ -1528,6 +1554,7 @@ validatedNamespace.on("connection", (socket) => {
 			}
 
 			// Emit the game state to the client
+			// !IMPORTANT, location may not be sent to the spy
 			socket.emit("get_game_state_response", {
 				gameState: room.getGameState(),
 				gamePacks: Array.from(gamePacksRegistry.values()),
