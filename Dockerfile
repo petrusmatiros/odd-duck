@@ -8,7 +8,7 @@ RUN npm ci --prefix client
 
 # Copy and install backend dependencies (production only)
 COPY server/package*.json ./server/
-RUN npm ci --prefix server --omit=dev
+RUN npm ci --prefix server
 
 # Copy source code
 COPY client/ ./client/
