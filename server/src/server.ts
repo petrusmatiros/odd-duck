@@ -9,7 +9,7 @@ import path from "node:path";
 import { Logger } from "../utils/log-utils";
 
 import { PlayerInstance } from "./PlayerInstance/PlayerInstance";
-import { RoomInstance } from "./RoomInstance/Roominstance";
+import { RoomInstance } from "./RoomInstance/RoomInstance";
 import { entertainment_pack } from "../data/packs/entertainment_pack";
 import type {
 	GameLocation,
