@@ -31,10 +31,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          args: |
-            VITE_WS_SERVER_URL=${{ vars.VITE_WS_SERVER_URL }}
-            VITE_WS_NEW_PLAYER_NAMESPACE=${{ vars.VITE_WS_NEW_PLAYER_NAMESPACE }}
-            VITE_WS_VALIDATED_NAMESPACE=${{ vars.VITE_WS_VALIDATED_NAMESPACE }}
           push: false
           tags: |
             ${{ vars.APP_NAME }}:latest
@@ -80,12 +76,8 @@ jobs:
             docker run -d --name $APP_NAME \
               -e NODE_ENV=${{ vars.NODE_ENV }} \
               -e WS_SERVER_PORT=${{ vars.WS_SERVER_PORT }} \
-              -e WS_SERVER_URL=${{ vars.WS_SERVER_URL }} \
               -e WS_NEW_PLAYER_NAMESPACE=${{ vars.WS_NEW_PLAYER_NAMESPACE }} \
               -e WS_VALIDATED_NAMESPACE=${{ vars.WS_VALIDATED_NAMESPACE }} \
-              -e VITE_WS_SERVER_URL=${{ vars.VITE_WS_SERVER_URL }} \
-              -e VITE_WS_NEW_PLAYER_NAMESPACE=${{ vars.VITE_WS_NEW_PLAYER_NAMESPACE }} \
-              -e VITE_WS_VALIDATED_NAMESPACE=${{ vars.VITE_WS_VALIDATED_NAMESPACE }} \
               -p 127.0.0.1:8081:8080 \
               $APP_NAME:$IMAGE_TAG || (docker logs $APP_NAME && exit 1)
 
