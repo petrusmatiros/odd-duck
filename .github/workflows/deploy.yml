@@ -31,6 +31,10 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          args: |
+            VITE_WS_SERVER_URL=${{ vars.VITE_WS_SERVER_URL }}
+            VITE_WS_NEW_PLAYER_NAMESPACE=${{ vars.VITE_WS_NEW_PLAYER_NAMESPACE }}
+            VITE_WS_VALIDATED_NAMESPACE=${{ vars.VITE_WS_VALIDATED_NAMESPACE }}
           push: false
           tags: |
             ${{ vars.APP_NAME }}:latest
