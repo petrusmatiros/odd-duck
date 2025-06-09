@@ -16,19 +16,12 @@ export default function Index() {
 	const [hasPlayername, setHasPlayername] = useState(false);
 	const [currentUsername, setCurrentUsername] = useState<string | null>(null);
 
-	console.log("VITE_WS_SERVER_URL", BASE_CONFIG.VITE_WS_SERVER_URL);
-	console.log(
-		"VITE_WS_VALIDATED_NAMESPACE",
-		BASE_CONFIG.VITE_WS_VALIDATED_NAMESPACE,
-	);
 	const validatedWsClient = useRef<WebsocketClient>(
 		new WebsocketClient(
 			`${BASE_CONFIG.VITE_WS_SERVER_URL}/${BASE_CONFIG.VITE_WS_VALIDATED_NAMESPACE}`,
 			(getCookie("token") as string) || "",
 		),
 	);
-
-	console.log("Validated Websocket Client", validatedWsClient.current);
 
 	const sound_quack = new Howl({
 		src: [BASE_CONFIG.ODD_DUCK_SOUND_SRC],
