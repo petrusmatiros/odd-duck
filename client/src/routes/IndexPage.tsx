@@ -1,3 +1,5 @@
+import { BASE_CONFIG } from "@/config/config";
+import { Howl } from "howler";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { WebsocketClient } from "../communication/WebsocketClient";
@@ -8,22 +10,20 @@ import {
 	setCookie,
 } from "../utils/cookie-utils";
 import { Logger } from "../utils/log-utils";
-import { Howl } from "howler";
-import { BASE_CONFIG } from "@/config/config";
 
 export default function Index() {
 	const logger = new Logger("client/index");
 	const [hasPlayername, setHasPlayername] = useState(false);
 	const [currentUsername, setCurrentUsername] = useState<string | null>(null);
 
-	console.log("VITE_WS_SERVER_URL", import.meta.env.VITE_WS_SERVER_URL);
+	console.log("VITE_WS_SERVER_URL", BASE_CONFIG.VITE_WS_SERVER_URL);
 	console.log(
 		"VITE_WS_VALIDATED_NAMESPACE",
-		import.meta.env.VITE_WS_VALIDATED_NAMESPACE,
+		BASE_CONFIG.VITE_WS_VALIDATED_NAMESPACE,
 	);
 	const validatedWsClient = useRef<WebsocketClient>(
 		new WebsocketClient(
-			`${import.meta.env.VITE_WS_SERVER_URL}/${import.meta.env.VITE_WS_VALIDATED_NAMESPACE}`,
+			`${BASE_CONFIG.VITE_WS_SERVER_URL}/${BASE_CONFIG.VITE_WS_VALIDATED_NAMESPACE}`,
 			(getCookie("token") as string) || "",
 		),
 	);

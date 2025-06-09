@@ -1,21 +1,21 @@
+import TooltipHint from "@/components/Popup/TooltipHint";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { BASE_CONFIG } from "@/config/config";
+import { copyToClipboard } from "@/utils/clipboard-utils";
+import unsplashImageUrl from "@/utils/img-utils";
+import capitalizeFirstLetter from "@/utils/string-utils";
+import clsx from "clsx";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { WebsocketClient } from "../communication/WebsocketClient";
 import Popup from "../components/Popup/Popup";
 import {
-	defaultCookieOptions,
-	getCookie,
-	setCookie,
+    defaultCookieOptions,
+    getCookie,
+    setCookie,
 } from "../utils/cookie-utils";
 import { Logger } from "../utils/log-utils";
-import { copyToClipboard } from "@/utils/clipboard-utils";
-import unsplashImageUrl from "@/utils/img-utils";
-import { BASE_CONFIG } from "@/config/config";
-import clsx from "clsx";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import TooltipHint from "@/components/Popup/TooltipHint";
-import capitalizeFirstLetter from "@/utils/string-utils";
 
 interface Player {
 	id: string;
@@ -114,7 +114,7 @@ export default function Page() {
 
 	const validatedWsClient = useRef<WebsocketClient>(
 		new WebsocketClient(
-			`${import.meta.env.VITE_WS_SERVER_URL}/${import.meta.env.VITE_WS_VALIDATED_NAMESPACE}`,
+			`${BASE_CONFIG.VITE_WS_SERVER_URL}/${BASE_CONFIG.VITE_WS_VALIDATED_NAMESPACE}`,
 			(getCookie("token") as string) || "",
 		),
 	);
