@@ -82,7 +82,7 @@ jobs:
               -e VITE_WS_SERVER_URL=${{ vars.VITE_WS_SERVER_URL }} \
               -e VITE_WS_NEW_PLAYER_NAMESPACE=${{ vars.VITE_WS_NEW_PLAYER_NAMESPACE }} \
               -e VITE_WS_VALIDATED_NAMESPACE=${{ vars.VITE_WS_VALIDATED_NAMESPACE }} \
-              -p 127.0.0.1:8080:8080 \
+              -p 127.0.0.1:8081:8080 \
               $APP_NAME:$IMAGE_TAG || (docker logs $APP_NAME && exit 1)
 
             echo "[+] Cleaning up image..."
