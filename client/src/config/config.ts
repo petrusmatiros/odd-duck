@@ -1,5 +1,5 @@
 export const BASE_CONFIG = {
-	VITE_WS_SERVER_URL: "http://localhost:8080",
+	VITE_WS_SERVER_URL: "https://odd-duck.petrusmatiros.com",
 	VITE_WS_NEW_PLAYER_NAMESPACE: "new_player",
 	VITE_WS_VALIDATED_NAMESPACE: "validated",
 	ODD_DUCK_IMAE_INTERVAL: 5000, // 5 seconds
