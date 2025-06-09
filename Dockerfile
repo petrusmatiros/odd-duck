@@ -10,9 +10,15 @@ RUN npm ci --prefix client
 COPY server/package*.json ./server/
 RUN npm ci --prefix server
 
+# Declare build-time args
 ARG VITE_WS_SERVER_URL
 ARG VITE_WS_NEW_PLAYER_NAMESPACE
 ARG VITE_WS_VALIDATED_NAMESPACE
+
+# Make them available as env vars during build
+ENV VITE_WS_SERVER_URL=$VITE_WS_SERVER_URL
+ENV VITE_WS_NEW_PLAYER_NAMESPACE=$VITE_WS_NEW_PLAYER_NAMESPACE
+ENV VITE_WS_VALIDATED_NAMESPACE=$VITE_WS_VALIDATED_NAMESPACE
 
 # Copy source code
 COPY client/ ./client/
