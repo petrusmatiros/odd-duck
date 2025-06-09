@@ -99,7 +99,7 @@ export default function Page() {
 	);
 	const [gamePack, setGamePack] = useState<GamePack | null>(null);
 	const [location, setLocation] = useState<GameLocation | null>(null);
-	const [role, setRole] = useState<"spy" | string | null>(null);
+	const [role, setRole] = useState<{ value: "spy" | string, label: "Spy" | string } | null>(null);
 	const [playerCardVisible, setPlayerCardVisible] = useState(false);
 	const [isHost, setIsHost] = useState<string | null>(null);
 	const [selectedLocale, setSelectedLocale] =
@@ -216,7 +216,7 @@ export default function Page() {
 				setGamePacks(data.gamePacks);
 				setGamePack(data.gamePack || null);
 				setRole(
-					data.playerRole ? capitalizeFirstLetter(data.playerRole) : null,
+					data.playerRole ? { value: data.playerRole, label: capitalizeFirstLetter(data.playerRole) } : null,
 				);
 				setLocation(data.location || null);
 				setTimerState(data.timerState || null);
@@ -661,7 +661,7 @@ export default function Page() {
 								<>
 									<img
 										src={
-											role === "spy"
+											role?.value === "spy"
 												? BASE_CONFIG.ODD_DUCK_OPEN_EYES_SRC
 												: BASE_CONFIG.DUCK_IMAGE_SRC
 										}
@@ -672,7 +672,7 @@ export default function Page() {
 									<div className="flex flex-col items-start justify-center gap-2 w-full">
 										<p className="flex flex-col">
 											{"Role: "}
-											<span className="font-bold">{role}</span>
+											<span className="font-bold">{role?.label}</span>
 										</p>
 										{/* Location should not be sent to spy players */}
 										<p className="flex flex-col">
