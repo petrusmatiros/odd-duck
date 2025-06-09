@@ -26,7 +26,6 @@ config();
 const logger = new Logger("Server");
 
 const PORT = process.env.WS_SERVER_PORT || 8080;
-const API_URL = process.env.WS_SERVER_URL || `http://localhost:${PORT}`;
 
 const app = express();
 const server = createServer(app);
@@ -84,7 +83,7 @@ app.get("/room/:code", (_req, res) => {
 });
 
 server.listen(PORT, () => {
-	logger.log(`Server is running on port ${process.env.WS_SERVER_URL}`);
+	logger.log(`Server is running on port ${PORT}`);
 });
 
 const roomsRegistry = new Map<string, RoomInstance>();
