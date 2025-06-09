@@ -16,12 +16,19 @@ export default function Index() {
 	const [hasPlayername, setHasPlayername] = useState(false);
 	const [currentUsername, setCurrentUsername] = useState<string | null>(null);
 
+	console.log("VITE_WS_SERVER_URL", import.meta.env.VITE_WS_SERVER_URL);
+	console.log(
+		"VITE_WS_VALIDATED_NAMESPACE",
+		import.meta.env.VITE_WS_VALIDATED_NAMESPACE,
+	);
 	const validatedWsClient = useRef<WebsocketClient>(
 		new WebsocketClient(
 			`${import.meta.env.VITE_WS_SERVER_URL}/${import.meta.env.VITE_WS_VALIDATED_NAMESPACE}`,
 			(getCookie("token") as string) || "",
 		),
 	);
+
+	console.log("Validated Websocket Client", validatedWsClient.current);
 
 	const sound_quack = new Howl({
 		src: [BASE_CONFIG.ODD_DUCK_SOUND_SRC],
@@ -171,7 +178,7 @@ export default function Index() {
 								logger.log("Create game clicked");
 								// play sound
 								sound_quack.play();
-	
+
 								// Check if already created a game before
 								validatedWsClient?.current?.socket.emit(
 									"check_if_already_created_game_before",
