@@ -14,7 +14,7 @@
 
 
 ## Website URL
-- TBD
+https://odd-duck.petrusmatiros.com
 
 ## Project description
 a spyfall like game
