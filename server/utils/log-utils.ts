@@ -6,6 +6,7 @@ export class Logger {
 		this.prefix = prefix;
 	}
 
+
 	private formatArg(arg: unknown): string {
 		if (typeof arg === "string") {
 			return arg;
